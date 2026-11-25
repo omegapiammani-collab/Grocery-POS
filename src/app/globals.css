@@ -12,6 +12,12 @@
   --text-muted: #475569;
   --status-warning: #d97706;
   --status-danger: #dc2626;
+  --type-page-title: 1.5rem;
+  --type-section-title: 1.125rem;
+  --type-kpi-value: 1.5rem;
+  --type-body: 0.9375rem;
+  --type-label: 0.75rem;
+  --type-meta: 0.6875rem;
 }
 
 @theme inline {
@@ -26,13 +32,21 @@
   --color-text-muted: var(--text-muted);
   --color-status-warning: var(--status-warning);
   --color-status-danger: var(--status-danger);
-  --font-sans: var(--font-noto-sans-thai), var(--font-jakarta), sans-serif;
+  --font-sans: var(--font-jakarta), var(--font-noto-sans-thai), sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-noto-sans-thai), var(--font-jakarta), sans-serif;
+  font-family: var(--font-jakarta), var(--font-noto-sans-thai), sans-serif;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.35;
+  text-wrap: balance;
 }
 
 /* Prevent background page scroll when native modal dialog is open */
@@ -47,7 +61,10 @@ dialog::backdrop {
   overscroll-behavior: contain;
 }
 
-.tabular-nums {
+.tabular-nums,
+input[type="number"],
+th,
+td {
   font-variant-numeric: tabular-nums;
 }
 

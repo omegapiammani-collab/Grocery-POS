@@ -4256,8 +4256,8 @@ export default function InventoryPage() {
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5">
         <div className="space-y-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">สินค้า &amp; สต็อก</h1>
-            <p className="text-sm text-slate-500">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 leading-snug">สินค้า &amp; สต็อก</h1>
+            <p className="text-sm text-slate-600 leading-relaxed">
               จัดการสินค้า หลายหน่วยนับ (ชิ้น/แพ็ค/ลัง) และรับของเข้าสต็อก
             </p>
           </div>

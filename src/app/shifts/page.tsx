@@ -3096,10 +3096,10 @@ export default function ShiftsPage() {
       <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 leading-snug">
               ปิดกะ &amp; นับเงินลิ้นชัก
             </h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-600 leading-relaxed">
               เปิดรอบการขาย บันทึกเงินทอนตั้งต้น และตรวจนับเงินสดในลิ้นชักตอนปิดร้าน
             </p>
           </div>
