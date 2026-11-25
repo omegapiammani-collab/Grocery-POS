@@ -40,6 +40,8 @@ export function Modal({
     onClose();
   };
 
+  if (!open) return null;
+
   return (
     <dialog
       ref={dialogRef}

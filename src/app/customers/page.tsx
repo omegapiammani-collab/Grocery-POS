@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import {
   UserPlus,
   Banknote,
@@ -1047,6 +1047,7 @@ export default function CustomersPage() {
 
   // Search, Filter & Sort
   const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
   const [filterMode, setFilterMode] = useState<
     | 'all'
     | 'debt'
@@ -1450,7 +1451,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
   }, [customers, customerTags]);
 
   const filteredCustomers = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     const list = customers.filter((c) => {
       if (selectedPaydayCycle === '__none__') {
         if ((paydayCycles[c.id] ?? '').trim() !== '') return false;
@@ -1564,7 +1565,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
         a.name.localeCompare(b.name, 'th')
       );
     });
-  }, [customers, search, filterMode, selectedPaydayCycle, selectedCustomerTag, sortBy, creditLimits, loyaltyPoints, storeCredits, defaultDiscounts, dueDates, contactNotes, paydayCycles, customerTags, lastPaymentMap, followupLogs, todayIso]);
+  }, [customers, deferredSearch, filterMode, selectedPaydayCycle, selectedCustomerTag, sortBy, creditLimits, loyaltyPoints, storeCredits, defaultDiscounts, dueDates, contactNotes, paydayCycles, customerTags, lastPaymentMap, followupLogs, todayIso]);
 
   useEffect(() => {
     const loadCreditLimits = () => {
@@ -4386,7 +4387,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                     const paydayCycle = paydayCycles[c.id] ?? '';
                     const customerTag = customerTags[c.id] ?? '';
                     return (
-                      <tr key={c.id} className="hover:bg-slate-50/80">
+                      <tr key={c.id} className="cv-auto-row hover:bg-slate-50/80">
                         <td className="px-3 py-2.5 font-semibold text-slate-900">
                           <div>{c.name}</div>
                           {c.phone && (
@@ -4491,7 +4492,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
               return (
               <div
                 key={c.id}
-                className={`rounded-2xl bg-white border p-4 flex flex-col justify-between gap-3 shadow-xs ${
+                className={`cv-auto-card rounded-2xl bg-white border p-4 flex flex-col justify-between gap-3 shadow-xs ${
                   isOverCreditLimit
                     ? 'border-rose-300'
                     : debt > 0 && dueInfo?.status === 'overdue'

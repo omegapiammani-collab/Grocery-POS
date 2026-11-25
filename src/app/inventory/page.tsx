@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import {
   Search,
   Plus,
@@ -469,6 +469,7 @@ export default function InventoryPage() {
   const [showMoreInventoryTools, setShowMoreInventoryTools] = useState(false);
 
   const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
   const [filterMode, setFilterMode] = useState<
     | 'all'
     | 'low'
@@ -1629,7 +1630,7 @@ export default function InventoryPage() {
     filterMode !== 'all';
 
   const filteredProducts = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     const list = products.filter((p) => {
       if (filterMode === 'inactive') {
         if (p.is_active !== false) return false;
@@ -1734,7 +1735,7 @@ export default function InventoryPage() {
     });
   }, [
     products,
-    search,
+    deferredSearch,
     filterMode,
     selectedCategory,
     selectedSupplier,
@@ -4883,8 +4884,8 @@ export default function InventoryPage() {
                           key={p.id}
                           className={
                             isInactive
-                              ? 'bg-slate-50/60 hover:bg-slate-100/70'
-                              : 'hover:bg-slate-50/70'
+                              ? 'cv-auto-row bg-slate-50/60 hover:bg-slate-100/70'
+                              : 'cv-auto-row hover:bg-slate-50/70'
                           }
                         >
                           <td className="px-4 py-3">

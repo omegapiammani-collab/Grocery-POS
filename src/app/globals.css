@@ -87,3 +87,21 @@ a {
     scroll-behavior: auto !important;
   }
 }
+
+.cv-auto-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 160px;
+}
+
+.cv-auto-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 56px;
+}
+
+@media print {
+  .cv-auto-card,
+  .cv-auto-row {
+    content-visibility: visible !important;
+    contain-intrinsic-size: none !important;
+  }
+}

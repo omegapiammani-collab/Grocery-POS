@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Search,
   Plus,
@@ -1560,6 +1560,7 @@ export default function PosPage() {
 
   // Filters
   const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
   const [selectedCat, setSelectedCat] = useState<string>('quick'); // 'all' | 'quick' | 'pinned' | 'promo' | 'wholesale' | category_id
   const [productSort, setProductSort] = useState<'name' | 'quick'>('name');
   const [gridDensity, setGridDensity] = useState<'large' | 'compact'>('large');
@@ -4148,7 +4149,7 @@ export default function PosPage() {
   );
 
   const filteredProducts = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     const list = products.filter((p) => {
       if (q) {
         const shelf = shelfLocations[p.id]?.toLowerCase() ?? '';
@@ -4183,7 +4184,7 @@ export default function PosPage() {
       }
       return a.name.localeCompare(b.name, 'th');
     });
-  }, [products, search, selectedCat, productSort, pinnedIdSet, shelfLocations, promoLabels, wholesaleTiers, unitBarcodes]);
+  }, [products, deferredSearch, selectedCat, productSort, pinnedIdSet, shelfLocations, promoLabels, wholesaleTiers, unitBarcodes]);
 
   const addProductToCart = (product: Product, chosenUnit?: ProductUnit) => {
     if (product.allow_custom_price) {
@@ -8490,7 +8491,7 @@ export default function PosPage() {
                   return (
                     <div
                       key={product.id}
-                      className={`group relative flex flex-col justify-between bg-white border shadow-xs hover:border-emerald-400 hover:shadow-md transition-all text-left ${
+                      className={`cv-auto-card group relative flex flex-col justify-between bg-white border shadow-xs hover:border-emerald-400 hover:shadow-md transition-all text-left ${
                         isPinned
                           ? 'border-amber-300 bg-amber-50/30'
                           : 'border-slate-200'
