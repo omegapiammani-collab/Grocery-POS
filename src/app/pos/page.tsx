@@ -1581,6 +1581,7 @@ export default function PosPage() {
     orderNote: string;
   } | null>(null);
   const [showMorePosTools, setShowMorePosTools] = useState(false);
+  const [showMoreCartTools, setShowMoreCartTools] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
   const [cartItemNotes, setCartItemNotes] = useState<Record<string, string>>({});
   const [editingNoteKey, setEditingNoteKey] = useState<string | null>(null);
@@ -7062,38 +7063,16 @@ export default function PosPage() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={handleCopyCurrentCartLineQuote}
-              title="คัดลอกสรุปรายการในตะกร้าส่งให้ลูกค้าทาง LINE"
-              className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors whitespace-nowrap"
+              onClick={() => setShowMoreCartTools((prev) => !prev)}
+              aria-expanded={showMoreCartTools || isSplitHoldActive}
+              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors whitespace-nowrap ${
+                showMoreCartTools || isSplitHoldActive
+                  ? 'border-slate-800 bg-slate-800 text-white'
+                  : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
             >
-              <span>{cartLineQuoteCopied ? '✓ คัดลอกแล้ว' : '💬 คัดลอกบิลส่ง LINE'}</span>
+              <span>{showMoreCartTools ? 'ซ่อนเครื่องมือ' : 'เครื่องมือ (⋯)'}</span>
             </button>
-            {cart.length >= 2 && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleToggleSplitHoldMode}
-                  title="เลือกบางรายการในตะกร้าเพื่อแยกไปพักบิลใหม่"
-                  className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold transition-colors whitespace-nowrap ${
-                    isSplitHoldActive
-                      ? 'border-amber-400 bg-amber-100 text-amber-900'
-                      : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
-                  }`}
-                >
-                  <PauseCircle className="h-3.5 w-3.5 shrink-0" />
-                  <span>{isSplitHoldActive ? 'ยกเลิกแยกบิล' : 'แยกรายการไปพักบิล'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={openSaveBundleModal}
-                  title="บันทึกสินค้าในตะกร้านี้เป็นชุดขายด่วน"
-                  className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors whitespace-nowrap"
-                >
-                  <PackagePlus className="h-3.5 w-3.5 shrink-0" />
-                  <span>บันทึกเป็นชุดขายด่วน</span>
-                </button>
-              </>
-            )}
             {confirmClearCart ? (
               <div className="inline-flex items-center gap-1.5">
                 <button
@@ -7121,6 +7100,7 @@ export default function PosPage() {
                     setSplitHoldMode(false);
                     setSplitSelectedKeys(new Set());
                     setConfirmClearCart(false);
+                    setShowMoreCartTools(false);
                     showToast('success', 'ล้างตะกร้าแล้ว (สามารถกดกู้คืนตะกร้าล่าสุดได้)');
                   }}
                   className="rounded-lg bg-rose-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-rose-700 whitespace-nowrap"
@@ -7143,6 +7123,44 @@ export default function PosPage() {
               >
                 ล้างตะกร้า
               </button>
+            )}
+          </div>
+        )}
+        {cart.length > 0 && (showMoreCartTools || isSplitHoldActive) && (
+          <div className="w-full flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={handleCopyCurrentCartLineQuote}
+              title="คัดลอกสรุปรายการในตะกร้าส่งให้ลูกค้าทาง LINE"
+              className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors whitespace-nowrap"
+            >
+              <span>{cartLineQuoteCopied ? '✓ คัดลอกแล้ว' : '💬 คัดลอกบิลส่ง LINE'}</span>
+            </button>
+            {cart.length >= 2 && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleToggleSplitHoldMode}
+                  title="เลือกบางรายการในตะกร้าเพื่อแยกไปพักบิลใหม่"
+                  className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap ${
+                    isSplitHoldActive
+                      ? 'border-amber-400 bg-amber-100 text-amber-900'
+                      : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                  }`}
+                >
+                  <PauseCircle className="h-3.5 w-3.5 shrink-0" />
+                  <span>{isSplitHoldActive ? 'ยกเลิกแยกบิล' : 'แยกรายการไปพักบิล'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={openSaveBundleModal}
+                  title="บันทึกสินค้าในตะกร้านี้เป็นชุดขายด่วน"
+                  className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors whitespace-nowrap"
+                >
+                  <PackagePlus className="h-3.5 w-3.5 shrink-0" />
+                  <span>บันทึกเป็นชุดขายด่วน</span>
+                </button>
+              </>
             )}
           </div>
         )}
@@ -7437,7 +7455,7 @@ export default function PosPage() {
                         {promoLabel && (
                           <span
                             title={`ป้ายโปรโมชั่น: ${promoLabel}`}
-                            className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-rose-500 to-orange-500 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-2xs max-w-full"
+                            className="inline-flex items-center gap-1 rounded-md bg-rose-600 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-2xs max-w-full"
                           >
                             <Tag className="h-2.5 w-2.5 shrink-0" />
                             <span className="truncate">{promoLabel}</span>
@@ -7500,12 +7518,12 @@ export default function PosPage() {
                   <span className="text-xs text-slate-500">{item.unit_name}</span>
                 )}
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => updateCartQty(item.key, -1)}
                     aria-label="ลดจำนวน"
-                    className="h-9 w-9 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                    className="h-10 w-10 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                   >
                     {item.qty <= 1 ? (
                       <Trash2 className="h-3.5 w-3.5 text-rose-500" />
@@ -7552,13 +7570,13 @@ export default function PosPage() {
                         e.currentTarget.blur();
                       }
                     }}
-                    className="h-9 w-14 rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-bold text-slate-900 tabular-nums focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-10 w-14 rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-bold text-slate-900 tabular-nums focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
                     type="button"
                     onClick={() => updateCartQty(item.key, 1)}
                     aria-label="เพิ่มจำนวน"
-                    className="h-9 w-9 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                    className="h-10 w-10 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
@@ -7567,7 +7585,7 @@ export default function PosPage() {
                     onClick={() => updateCartQty(item.key, 5)}
                     aria-label={`เพิ่มจำนวน ${item.product_name} ทีละ 5`}
                     title="เพิ่มทีละ 5"
-                    className="h-9 px-2.5 flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                    className="h-10 px-3 flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors"
                   >
                     +5
                   </button>
@@ -7703,6 +7721,14 @@ export default function PosPage() {
 
       <div className="border-t border-slate-200 p-4 bg-slate-50 space-y-3">
         <div className="space-y-1.5">
+          <input
+            type="search"
+            value={customerSearchQuery}
+            onChange={(e) => setCustomerSearchQuery(e.target.value)}
+            placeholder="ค้นหาชื่อหรือเบอร์โทรลูกค้า..."
+            aria-label="ค้นหาชื่อลูกค้าในตะกร้า"
+            className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs focus:border-emerald-500 focus:outline-none"
+          />
           <div className="flex items-center gap-1.5">
             <UserCheck className="h-4 w-4 text-slate-500 shrink-0" />
             <select
@@ -7712,7 +7738,17 @@ export default function PosPage() {
               className="flex-1 min-w-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:border-emerald-500 focus:outline-none"
             >
               <option value="">ลูกค้าทั่วไป (ไม่ระบุสมาชิก)</option>
-              {customers.map((c) => {
+              {customers
+                .filter((c) => {
+                  const q = customerSearchQuery.trim().toLowerCase();
+                  if (!q) return true;
+                  return (
+                    c.name.toLowerCase().includes(q) ||
+                    (c.phone ?? '').toLowerCase().includes(q) ||
+                    c.id === selectedCustomerId
+                  );
+                })
+                .map((c) => {
                 const vipPct = defaultDiscounts[c.id] ?? 0;
                 const dueInfo = getCustomerDueInfo(dueDates[c.id], todayIso, c.total_debt);
                 return (
@@ -7729,7 +7765,7 @@ export default function PosPage() {
               onClick={openQuickCustomerModal}
               title="เพิ่มลูกค้าด่วน"
               aria-label="เพิ่มลูกค้าด่วน"
-              className="h-8 w-8 flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors shrink-0"
+              className="h-9 w-9 flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors shrink-0"
             >
               <Plus className="h-3.5 w-3.5" />
             </button>
@@ -7897,7 +7933,7 @@ export default function PosPage() {
         <div
           role="status"
           aria-live="polite"
-          className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg ${
+          className={`fixed top-14 md:top-4 right-4 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg ${
             toast.type === 'success'
               ? 'bg-emerald-600 text-white'
               : 'bg-rose-600 text-white'
@@ -8512,7 +8548,7 @@ export default function PosPage() {
                         title={
                           isPinned ? 'เลิกปักหมุดสินค้าด่วน' : 'ปักหมุดสินค้าด่วน'
                         }
-                        className={`absolute z-10 min-h-8 min-w-8 flex items-center justify-center rounded-lg p-1.5 transition-colors ${
+                        className={`absolute z-10 min-h-9 min-w-9 flex items-center justify-center rounded-lg p-1.5 transition-colors ${
                           isCompact ? 'top-1 right-1' : 'top-1.5 right-1.5'
                         } ${
                           isPinned
@@ -8587,10 +8623,10 @@ export default function PosPage() {
                               key={u.id}
                               type="button"
                               onClick={() => addProductToCart(product, u)}
-                              className={`rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 font-medium text-slate-700 transition-colors min-h-8 ${
+                              className={`rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 font-medium text-slate-700 transition-colors min-h-10 ${
                                 isCompact
-                                  ? 'px-2 py-1 text-[11px]'
-                                  : 'px-2.5 py-1 text-xs'
+                                  ? 'px-2.5 py-1.5 text-[11px]'
+                                  : 'px-2.5 py-1.5 text-xs'
                               }`}
                             >
                               {u.unit_name} {formatBaht(u.selling_price)}

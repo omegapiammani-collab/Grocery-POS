@@ -1386,6 +1386,7 @@ export default function DashboardPage() {
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showMoreDashboardTools, setShowMoreDashboardTools] = useState(false);
   const [copied, setCopied] = useState(false);
   const [topSortBy, setTopSortBy] = useState<'revenue' | 'profit'>('revenue');
   const [topLimit, setTopLimit] = useState<5 | 10>(5);
@@ -5002,24 +5003,6 @@ export default function DashboardPage() {
             )}
             <button
               type="button"
-              onClick={handlePrintReport}
-              disabled={loading}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Printer className="h-4 w-4" />
-              <span>พิมพ์รายงาน</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleExportCSV}
-              disabled={sales.length === 0}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download className="h-4 w-4" />
-              <span>ส่งออก CSV</span>
-            </button>
-            <button
-              type="button"
               onClick={handleCopySummary}
               className={`flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-colors ${
                 copied
@@ -5040,14 +5023,49 @@ export default function DashboardPage() {
             </button>
             <button
               type="button"
+              onClick={() => setShowMoreDashboardTools((prev) => !prev)}
+              aria-expanded={showMoreDashboardTools}
+              className={`flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-colors ${
+                showMoreDashboardTools
+                  ? 'border-slate-800 bg-slate-800 text-white'
+                  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <span>{showMoreDashboardTools ? 'ซ่อนเครื่องมือเสริม' : 'เครื่องมือรายงานเสริม (⋯)'}</span>
+            </button>
+          </div>
+        </div>
+
+        {showMoreDashboardTools && (
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs">
+            <button
+              type="button"
+              onClick={handlePrintReport}
+              disabled={loading}
+              className="flex items-center gap-1.5 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-800 hover:bg-violet-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Printer className="h-4 w-4" />
+              <span>พิมพ์รายงาน (A4)</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              disabled={sales.length === 0}
+              className="flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="h-4 w-4" />
+              <span>ส่งออก CSV</span>
+            </button>
+            <button
+              type="button"
               onClick={openMasterBackupModal}
-              className="flex items-center gap-1.5 rounded-xl border border-sky-300 bg-sky-50 px-3.5 py-2 text-xs font-bold text-sky-800 hover:bg-sky-100 shadow-xs"
+              className="flex items-center gap-1.5 rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-800 hover:bg-sky-100 shadow-xs"
             >
               <Database className="h-4 w-4 text-sky-600 shrink-0" />
               <span>สำรอง/กู้คืนข้อมูลทั้งร้าน (Master JSON)</span>
             </button>
           </div>
-        </div>
+        )}
 
         {loading ? (
           <div className="p-8 text-center text-sm text-slate-500">กำลังโหลด...</div>
