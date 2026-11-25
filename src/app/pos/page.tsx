@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Search,
@@ -1627,6 +1628,7 @@ export default function PosPage() {
   const [showMoreReceiptActions, setShowMoreReceiptActions] = useState(false);
   const [showCartCustomerPicker, setShowCartCustomerPicker] = useState(false);
   const [confirmDeleteBundleId, setConfirmDeleteBundleId] = useState<string | null>(null);
+  const [confirmDeleteCartItemKey, setConfirmDeleteCartItemKey] = useState<string | null>(null);
   const [expandedHeldBillActionsId, setExpandedHeldBillActionsId] = useState<string | null>(null);
   const cashReceivedInputRef = useRef<HTMLInputElement>(null);
   const [highlightedProductIndex, setHighlightedProductIndex] = useState<number>(-1);
@@ -7689,18 +7691,46 @@ export default function PosPage() {
                 )}
 
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => updateCartQty(item.key, -1)}
-                    aria-label="ลดจำนวน"
-                    className="h-10 w-10 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
-                  >
-                    {item.qty <= 1 ? (
-                      <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                    ) : (
-                      <Minus className="h-3.5 w-3.5" />
-                    )}
-                  </button>
+                  {item.qty <= 1 && confirmDeleteCartItemKey === item.key ? (
+                    <div className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-1.5 py-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmDeleteCartItemKey(null);
+                          updateCartQty(item.key, -1);
+                        }}
+                        className="rounded bg-rose-600 px-2 py-1 text-xs font-bold text-white hover:bg-rose-700"
+                      >
+                        ลบ
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteCartItemKey(null)}
+                        className="rounded border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                      >
+                        ยกเลิก
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (item.qty <= 1) {
+                          setConfirmDeleteCartItemKey(item.key);
+                        } else {
+                          updateCartQty(item.key, -1);
+                        }
+                      }}
+                      aria-label={item.qty <= 1 ? `ลบ ${item.product_name}` : 'ลดจำนวน'}
+                      className="h-10 w-10 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                    >
+                      {item.qty <= 1 ? (
+                        <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                      ) : (
+                        <Minus className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  )}
                   <input
                     type="number"
                     min={0.001}
@@ -8210,41 +8240,16 @@ export default function PosPage() {
                   </span>
                 )}
               </button>
-              {activeShift ? (
-                <div
-                  title={`เปิดกะเมื่อ ${formatTime(activeShift.opened_at)} น. (ระบบกำลังบันทึกบิลเข้ากะปัจจุบัน)`}
-                  className="flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs font-semibold text-emerald-700 shrink-0"
+              {!loading && !activeShift && (
+                <button
+                  type="button"
+                  onClick={() => setShiftModalOpen(true)}
+                  className="flex items-center gap-1.5 rounded-xl bg-sky-50 border border-sky-200 px-3 py-2.5 text-sm font-semibold text-sky-700 hover:bg-sky-100 transition-colors shrink-0"
                 >
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>กะเปิดอยู่</span>
-                  <span className="hidden sm:inline text-emerald-600 tabular-nums">
-                    ({formatTime(activeShift.opened_at)})
-                  </span>
-                </div>
-              ) : (
-                !loading && (
-                  <button
-                    type="button"
-                    onClick={() => setShiftModalOpen(true)}
-                    className="flex items-center gap-1.5 rounded-xl bg-sky-50 border border-sky-200 px-3 py-2.5 text-sm font-semibold text-sky-700 hover:bg-sky-100 transition-colors shrink-0"
-                  >
-                    <Clock className="h-4 w-4" />
-                    <span>เปิดกะขาย</span>
-                  </button>
-                )
+                  <Clock className="h-4 w-4" />
+                  <span>เปิดกะขาย</span>
+                </button>
               )}
-              <button
-                type="button"
-                onClick={() => setShortcutsOpen(true)}
-                title="ดูคู่มือคีย์ลัดทั้งหมด (F1)"
-                aria-label="ดูคู่มือคีย์ลัดทั้งหมด (F1)"
-                className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors shrink-0"
-              >
-                <HelpCircle className="h-4 w-4" />
-                <kbd aria-hidden="true" className="hidden sm:inline text-[11px] font-bold">
-                  F1
-                </kbd>
-              </button>
               <button
                 type="button"
                 onClick={() => setShowMorePosTools((prev) => !prev)}
@@ -8255,8 +8260,14 @@ export default function PosPage() {
                     : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
                 }`}
               >
+                {activeShift && (
+                  <span
+                    title={`กะเปิดอยู่ (${formatTime(activeShift.opened_at)} น.)`}
+                    className="h-2 w-2 rounded-full bg-emerald-500 shrink-0"
+                  />
+                )}
                 <Settings className="h-4 w-4" />
-                <span>{showMorePosTools ? 'ซ่อนเครื่องมือเสริม' : 'เครื่องมือเสริม (⋯)'}</span>
+                <span>{showMorePosTools ? 'ซ่อนตัวเลือก' : 'ตัวเลือกเสริม (⋯)'}</span>
               </button>
             </div>
 
@@ -8390,6 +8401,15 @@ export default function PosPage() {
                     >
                       <Settings className="h-4 w-4 text-slate-600" />
                       <span>ตั้งค่าร้าน / ใบเสร็จ</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShortcutsOpen(true)}
+                      title="คู่มือคีย์ลัดแป้นพิมพ์ (F1)"
+                      className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
+                    >
+                      <HelpCircle className="h-4 w-4 text-emerald-600" />
+                      <span>คีย์ลัด (F1)</span>
                     </button>
                     <button
                       type="button"
@@ -8587,14 +8607,14 @@ export default function PosPage() {
                                 handleDeleteBundle(bundle.id);
                                 setConfirmDeleteBundleId(null);
                               }}
-                              className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white hover:bg-rose-700"
+                              className="rounded bg-rose-600 px-2 py-1 text-xs font-bold text-white hover:bg-rose-700"
                             >
                               ลบ
                             </button>
                             <button
                               type="button"
                               onClick={() => setConfirmDeleteBundleId(null)}
-                              className="rounded bg-white border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100"
+                              className="rounded bg-white border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100"
                             >
                               ยกเลิก
                             </button>
@@ -9609,14 +9629,6 @@ export default function PosPage() {
                     <span className="font-bold text-slate-900 truncate">
                       {selectedCustomer.name}
                     </span>
-                    {selectedCustomerTag && (
-                      <span
-                        title={`กลุ่มลูกค้า: ${selectedCustomerTag}`}
-                        className="inline-flex max-w-full items-center gap-1 rounded-full border border-purple-300 bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-800 break-words"
-                      >
-                        🏷️ {selectedCustomerTag}
-                      </span>
-                    )}
                     {Number(selectedCustomer.total_debt) > 0 && (
                       <button
                         type="button"
@@ -9627,22 +9639,6 @@ export default function PosPage() {
                         <Banknote className="h-3 w-3 text-emerald-600" />
                         <span>รับชำระหนี้</span>
                       </button>
-                    )}
-                    {selectedCustomerContactNote && (
-                      <span
-                        title={`ที่อยู่ / ช่องทางติดต่อ: ${selectedCustomerContactNote}`}
-                        className="inline-flex max-w-full items-center gap-1 rounded-full border border-teal-300 bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-teal-800 break-words"
-                      >
-                        🏠 {selectedCustomerContactNote}
-                      </span>
-                    )}
-                    {selectedCustomerPaydayCycle && (
-                      <span
-                        title={`รอบจ่ายเงินประจำ: ${selectedCustomerPaydayCycle}`}
-                        className="inline-flex max-w-full items-center gap-1 rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800 break-words"
-                      >
-                        🗓️ รอบจ่าย: {selectedCustomerPaydayCycle}
-                      </span>
                     )}
                     {selectedCustomerVipPct > 0 && (
                       <span
@@ -9660,12 +9656,10 @@ export default function PosPage() {
                         💰 เงินฝากทอน: {formatBaht(selectedCustomerStoreCredit)}
                       </span>
                     )}
-                    {renderCustomerCreditHealthBadge(selectedCustomerCreditHealth)}
                     {renderCustomerDueBadge(selectedCustomerDueInfo, selectedCustomer.total_debt)}
                   </div>
                   <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 font-bold text-emerald-800 tabular-nums shrink-0">
-                    จะได้รับ +{formatNumber(earnedPointsThisBill)} แต้ม
-                    <span className="font-normal text-emerald-700">(ทุก 25฿ = 1 แต้ม)</span>
+                    +{formatNumber(earnedPointsThisBill)} แต้ม
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-amber-900">
@@ -10368,8 +10362,14 @@ export default function PosPage() {
                             </p>
                           </>
                         ) : (
-                          <div className="w-full rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
-                            ยังไม่ได้ตั้งค่าเบอร์/เลข PromptPay กรุณาไปตั้งค่าที่หน้า &quot;สรุปยอด &amp; ตั้งค่า&quot;
+                          <div className="w-full rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 flex flex-wrap items-center justify-between gap-2">
+                            <span>ยังไม่ได้ตั้งค่าเบอร์/เลข PromptPay</span>
+                            <Link
+                              href="/dashboard"
+                              className="rounded-lg bg-amber-600 px-2.5 py-1 font-bold text-white hover:bg-amber-700 transition-colors"
+                            >
+                              ไปหน้าตั้งค่า →
+                            </Link>
                           </div>
                         )}
                       </div>
@@ -10525,8 +10525,14 @@ export default function PosPage() {
                       : 'ยอดชำระสุทธิเป็น 0 บาท สามารถกดยืนยันบันทึกบิลได้ทันที'}
                   </div>
                 ) : (
-                  <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
-                    ยังไม่ได้ตั้งค่าเบอร์/เลข PromptPay กรุณาไปตั้งค่าที่หน้า &quot;สรุปยอด &amp; ตั้งค่า&quot;
+                  <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <span>ยังไม่ได้ตั้งค่าเบอร์/เลข PromptPay สำหรับสร้าง QR</span>
+                    <Link
+                      href="/dashboard"
+                      className="shrink-0 rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-amber-700 transition-colors"
+                    >
+                      ไปหน้าสรุปยอด &amp; ตั้งค่า →
+                    </Link>
                   </div>
                 )}
               </div>
@@ -11281,6 +11287,7 @@ export default function PosPage() {
         }}
         title={`บิลที่พักไว้ (${heldBills.length})`}
         maxWidthClass="max-w-lg"
+        closeOnBackdropClick
       >
         {heldBills.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-300 py-12 text-center text-sm text-slate-500">
@@ -12110,6 +12117,7 @@ export default function PosPage() {
         }}
         title="ประวัติบิลวันนี้"
         maxWidthClass="max-w-2xl"
+        closeOnBackdropClick={!partialReturnSale && !partialReturnSubmitting}
       >
         <div className="space-y-4">
           {todaySalesNotice && (
@@ -13048,6 +13056,7 @@ export default function PosPage() {
         onClose={() => setPriceCheckerOpen(false)}
         title="เช็กราคาและข้อมูลสินค้าด่วน (F6)"
         maxWidthClass="max-w-2xl"
+        closeOnBackdropClick
       >
         <div className="space-y-4">
           <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5 text-xs text-amber-900 flex items-center justify-between gap-2">
