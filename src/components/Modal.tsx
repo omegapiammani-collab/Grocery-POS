@@ -9,6 +9,7 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   maxWidthClass?: string;
+  closeOnBackdropClick?: boolean;
 }
 
 export function Modal({
@@ -17,6 +18,7 @@ export function Modal({
   title,
   children,
   maxWidthClass = 'max-w-lg',
+  closeOnBackdropClick = false,
 }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -48,7 +50,7 @@ export function Modal({
       aria-labelledby={titleId}
       onClose={handleClose}
       onClick={(e) => {
-        if (e.target === dialogRef.current) {
+        if (closeOnBackdropClick && e.target === dialogRef.current) {
           handleClose();
         }
       }}
