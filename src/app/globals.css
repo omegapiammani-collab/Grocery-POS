@@ -111,6 +111,21 @@ a {
   scrollbar-color: #cbd5e1 transparent;
 }
 
+button,
+a,
+input,
+select,
+textarea,
+label {
+  touch-action: manipulation;
+}
+
+@media (pointer: coarse) {
+  button:active {
+    transform: scale(0.98);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse {
     animation: none !important;

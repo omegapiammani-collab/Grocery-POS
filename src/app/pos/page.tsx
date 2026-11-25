@@ -7719,7 +7719,7 @@ export default function PosPage() {
         )}
       </div>
 
-      <div className="border-t border-slate-200 p-4 bg-slate-50 space-y-3">
+      <div className="border-t border-slate-200 p-3 sm:p-4 bg-slate-50 space-y-2.5">
         <div className="space-y-1.5">
           <input
             type="search"
@@ -7874,22 +7874,24 @@ export default function PosPage() {
             ))}
           </div>
         </div>
-        <div className="flex items-baseline justify-between">
-          <span className="text-sm font-medium text-slate-600">ยอดรวมสุทธิ</span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-600">ยอดรวมสุทธิ</span>
+            <button
+              type="button"
+              disabled={cart.length === 0}
+              onClick={() => setCustomerDisplayOpen(true)}
+              title="เปิดหน้าจอแสดงยอดขนาดใหญ่ให้ลูกค้าดูและสแกนจ่าย"
+              className="inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] font-bold text-sky-800 hover:bg-sky-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <Monitor className="h-3 w-3 shrink-0" />
+              <span>จอลูกค้า</span>
+            </button>
+          </div>
           <span className="text-2xl font-extrabold text-emerald-700 tabular-nums">
             {formatBaht(discountAmount > 0 ? finalTotal : cartTotal)}
           </span>
         </div>
-        <button
-          type="button"
-          disabled={cart.length === 0}
-          onClick={() => setCustomerDisplayOpen(true)}
-          title="เปิดหน้าจอแสดงยอดขนาดใหญ่ให้ลูกค้าดูและสแกนจ่าย"
-          className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 py-2 px-3 text-xs font-bold text-sky-800 hover:bg-sky-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          <Monitor className="h-3.5 w-3.5 shrink-0" />
-          <span>จอแสดงยอดลูกค้า</span>
-        </button>
         <div className="flex items-center gap-1.5">
           {cart.length > 0 && (
             <button
@@ -8273,7 +8275,7 @@ export default function PosPage() {
 
             {/* Category Tabs, Multiplier & Sort Toggle */}
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 min-w-0 flex-1">
+              <div className="flex items-center gap-2 overflow-x-auto touch-pan-x pb-1 min-w-0 flex-1">
                 <button
                   type="button"
                   onClick={() => setSelectedCat('pinned')}
@@ -8398,7 +8400,7 @@ export default function PosPage() {
 
             {/* Quick Bundles Bar */}
             {bundles.length > 0 && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-0.5 pt-1.5 border-t border-slate-100">
+              <div className="flex items-center gap-2 overflow-x-auto touch-pan-x pb-0.5 pt-1.5 border-t border-slate-100">
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 whitespace-nowrap shrink-0">
                   <Package className="h-3.5 w-3.5 text-indigo-600" />
                   <span>ชุดขายด่วน:</span>
