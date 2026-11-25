@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ระบบร้านขายของชำ POS (Grocery POS)
 
-## Getting Started
+ระบบขายหน้าร้าน (Point of Sale) และบริหารจัดการร้านขายของชำ/โชห่วยไทยครบวงจร พัฒนาด้วย **Next.js 16 (App Router + Cache Components)** และ **Supabase (PostgreSQL + Auth + RPC)** รองรับการใช้งานทั้งบนคอมพิวเตอร์หน้าร้าน แท็บเล็ต และมือถือ พร้อมใช้งานออนไลน์ฟรี 100% บน **Vercel + Supabase**
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ฟีเจอร์หลักทั้ง 5 โมดูล
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 1. หน้าขายหน้าร้าน (`/pos`)
+- **ยิงบาร์โค้ดและขายหลายหน่วยนับ**: รองรับเครื่องยิงบาร์โค้ด USB, บาร์โค้ดแยกตามหน่วย (ชิ้น / แพ็ค / ลัง), ปุ่มคูณจำนวน (`×1 / ×2 / ×5 / ×10`), และเซตสินค้าขายด่วน (Bundles)
+- **ราคาส่ง & ชั่งกิโล/ตักตามงบ**: คำนวณราคาส่งอัตโนมัติตามจำนวนขั้นต่ำ และเครื่องคิดเลข **ชั่งกิโล / ตักตามงบ** (เช่น ลูกค้าขอซื้อตามงบ 20 บาท) พร้อมรายการจิปาถะที่ใช้บ่อย (`F7`)
+- **พักบิล & คิวจัดส่ง/พรีออเดอร์**: พักบิลได้ไม่จำกัด, แยกรายการบางส่วนไปพักบิล, จัดการออเดอร์นัดรับเองและจัดส่งถึงบ้าน (พร้อมสถานะจัดของ/คนส่งของ และปุ่มคัดลอกใบงานคนส่งของทาง LINE), และปุ่ม **คิดเงินบิลนี้ทันที**
+- **การรับชำระเงินครบทุกรูปแบบ**:
+  - เงินสด พร้อม **แนะนำการหยิบธนบัตรและเหรียญทอนตามสีธนบัตรไทยจริง**
+  - **PromptPay QR Code** (สร้าง QR พร้อมยอดเงินอัตโนมัติ) และแบบผสม **เงินสด + QR**
+  - **ลงบัญชีเงินเชื่อ (เซ็นไว้ก่อน)** พร้อมตรวจวงเงินเครดิต, เตือนบิลเลยกำหนดชำระ, ตั้งวันนัดชำระจากรอบเงินเดือนออก
+  - **เงินฝากทอน (Store Credit)** และ **มัดจำขวด/ลัง/ถังน้ำ**
+  - รับชำระหนี้เก่าพร้อมบิลใหม่ หรือรับชำระหนี้ด่วนจากหน้าขาย
+- **หลังการขาย**: พิมพ์ใบเสร็จความร้อน 80mm, ใบจัดของ (Packing Slip), หน้าจอแสดงยอดฝั่งลูกค้า (Customer Display), และคืนสินค้าบางส่วน (Partial Return) หรือคืนเป็นเครดิตแลกสินค้า
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. คลังสินค้า (`/inventory`)
+- จัดการสินค้าหลายหน่วยขาย, บาร์โค้ดหลายหน่วย, และระบบ **สร้างบาร์โค้ด EAN-13 ประจำร้าน** สำหรับสินค้าไร้บาร์โค้ด
+- แจ้งเตือนสินค้าใกล้หมด, ต่ำกว่าเป้าเต็มชั้น (Max Stock), ใกล้หมดอายุ/หมดอายุแล้ว, ต้นทุนปรับขึ้น, และกำไรราคาส่งต่ำ
+- คำนวณระยะเวลาพอขาย (**Stock Runway**) จากยอดขายเฉลี่ย 7 วัน
+- รับของเข้าสต็อกแบบกลุ่ม (Batch Restock) พร้อมคำนวณต้นทุนต่อชิ้นจากราคาแพ็ค, ตัดจ่ายของเสีย (Write-off), ตรวจนับสต็อกและพิมพ์ใบนับสต็อก A4
+- พิมพ์ป้ายราคาชั้นวาง (พร้อมตัวเลือกแสดงตำแหน่งชั้นวาง & เป้าเต็มชั้น) และพิมพ์ใบสั่งซื้อ (PO) แยกตามร้านค้าส่ง
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. สมุดลูกหนี้และสมาชิก (`/customers`)
+- ติดตามยอดหนี้ค้างชำระ, วงเงินเครดิต, และเกรดสุขภาพเครดิต (`เครดิตดี` / `เฝ้าระวัง` / `เสี่ยง/เกินกำหนด`)
+- ตั้งรอบวันเงินเดือนออกและคำนวณวันนัดชำระอัตโนมัติ (รายบุคคลและแบบกลุ่ม), แจ้งเตือนคิวนัดชำระล่วงหน้า 7 วัน และติดตามลูกหนี้ขาดส่ง
+- รับชำระหนี้ (พร้อมตัวเลือกลดเศษหนี้), **หักเงินฝากทอนล้างหนี้ในคลิกเดียว**, แผนผ่อนชำระ, บันทึกประวัติการติดตามหนี้, และคัดลอกข้อความแจ้งยอด 3 ระดับสำหรับส่ง LINE
+- ระบบแต้มสะสมสมาชิก, ส่วนลด VIP ประจำตัว, ป้ายจัดกลุ่มลูกค้า (Tags), และพิมพ์ใบแจ้งหนี้ / ใบเสร็จรับชำระหนี้ 80mm
 
-## Learn More
+### 4. กะการทำงานและลิ้นชักเงินสด (`/shifts`)
+- เปิด-ปิดกะพร้อมเครื่องนับธนบัตรและเหรียญ, แจ้งเตือนเงินทอนย่อยไม่พอเปิดกะ และแจ้งเตือนเงินสดล้นลิ้นชักระหว่างวัน
+- บันทึกรายจ่ายหน้าร้าน, นำเงินเข้าลิ้นชัก, และ **แบ่งเงินสดเก็บเข้าเซฟระหว่างกะ** (พร้อมตัวกรอง ค้นหา และส่งออก CSV)
+- คำนวณยอดเงินสดส่งเจ้าของร้าน (Net Cash Drop) หักเงินทอนกันไว้กะถัดไป, เกรดความแม่นยำลิ้นชัก (`A+ / B / C`), สาเหตุส่วนต่างเงินสด, และข้อความฝากส่งต่อกะ
+- สรุปผลงานพนักงานแคชเชียร์, พิมพ์ใบสรุปปิดกะ (Z-Report), ใบส่งมอบเงินทอนเปิดกะ, และคัดลอกสรุปกะส่ง LINE
 
-To learn more about Next.js, take a look at the following resources:
+### 5. รายงานผู้บริหาร & สำรองข้อมูล (`/dashboard`)
+- **ดัชนีสุขภาพร้านค้าครบวงจร 5 มิติ (5-Pillar Store Health Scorecard)** ประเมินคะแนนรวม `/100` (เป้าหมายยอดขาย, จุดคุ้มทุน/กำไรสุทธิ, ความพร้อมสต็อก, สภาพคล่องลูกหนี้, ควบคุมการสูญเสีย)
+- วิเคราะห์จุดคุ้มทุน, พยากรณ์งบประมาณสั่งซื้อสินค้าเข้าสต็อกแยกร้านค้าส่ง, ช่วงเวลาขายดี 24 ชม., วันขายดีในสัปดาห์, สินค้าที่มักซื้อคู่กัน, และสินค้าไม่เคลื่อนไหว
+- พิมพ์รายงานผู้บริหาร A4 และระบบ **Master All-in-One JSON Backup & Restore** พร้อมแผงตรวจสอบความครบถ้วนของข้อมูลเสริมทั้งหมดในเครื่อง
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## คีย์ลัดแป้นพิมพ์หน้าขาย POS
 
-## Deploy on Vercel
+| ปุ่ม | การทำงาน |
+| :--- | :--- |
+| `F1` | เปิด / ปิดหน้าต่างคู่มือคีย์ลัด |
+| `F2` | โฟกัสช่องค้นหาสินค้า / ยิงบาร์โค้ด |
+| `F4` | พักบิลด่วน (เมื่อมีสินค้าในตะกร้า) / เปิดดูบิลที่พักไว้ (เมื่อตะกร้าว่าง) |
+| `F6` | เปิด / ปิดหน้าต่างเช็กราคาและข้อมูลสินค้าด่วน (ไม่เพิ่มลงตะกร้า) |
+| `F7` | เปิด / ปิดหน้าต่างเพิ่มสินค้าเบ็ดเตล็ด / รายการจิปาถะด่วน |
+| `F8` | เปิดหน้าชำระเงินแท็บ **เงินสด** (หรือสลับเป็นเงินสดในหน้าชำระเงิน) |
+| `F9` | เปิดหน้าชำระเงินแท็บ **พร้อมเพย์ QR** (หรือสลับเป็น QR ในหน้าชำระเงิน) |
+| `F10` | เปิดหน้าชำระเงินแท็บ **เงินเชื่อ** (หรือสลับเป็นเงินเชื่อในหน้าชำระเงิน) |
+| `Ctrl + Enter` | จ่ายเงินสดพอดีและจบบิลทันที (เมื่อมีสินค้าในตะกร้า) |
+| `Enter` | เพิ่มสินค้าเข้าตะกร้าทันที (เมื่ออยู่ในช่องค้นหา) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## เทคโนโลยีที่ใช้ (Tech Stack)
+
+- **Frontend:** Next.js `16.4.6` (App Router, Turbopack, Cache Components), React `19.3.0`, TypeScript `^5`
+- **Styling & Icons:** Tailwind CSS `4.3.3`, Lucide React `^1.72.0`, ฟอนต์ `Noto Sans Thai` + `Plus Jakarta Sans`
+- **Backend & Database:** Supabase (`@supabase/supabase-js`, `@supabase/ssr`) — PostgreSQL, Authentication, Row Level Security และ RPC (`complete_sale`, `record_debt_payment`)
+- **Payment QR:** `promptpay-qr` + `qrcode`
+
+---
+
+## การติดตั้งและใช้งานในเครื่อง (Local Development)
+
+1. **ติดตั้ง Dependencies**
+   ```bash
+   npm install
+   ```
+   *(บน Windows PowerShell หากติด Execution Policy ให้ใช้ `npm.cmd` และ `npx.cmd`)*
+
+2. **ตั้งค่า Environment Variables**
+   สร้างไฟล์ `.env.local` ที่ root ของโปรเจกต์:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_publishable_or_anon_key
+   ```
+
+3. **รันเซิร์ฟเวอร์พัฒนา**
+   ```bash
+   npm run dev
+   ```
+   เปิดเบราว์เซอร์ไปที่ `http://localhost:3000` (หากเข้าใช้งานครั้งแรก สามารถกด **"สร้างบัญชีเจ้าของร้าน"** บนหน้า `/login` ได้ทันที)
+
+4. **ตรวจสอบ TypeScript และ Build สำหรับ Production**
+   ```bash
+   npx tsc --noEmit
+   npm run build
+   npm run start
+   ```
+
+---
+
+## การ Deploy ออนไลน์ฟรี (Vercel + Supabase)
+
+1. นำโปรเจกต์ขึ้น GitHub Repository
+2. เข้า [Vercel](https://vercel.com) เลือก **Add New Project** แล้วเชื่อมกับ Repository นี้
+3. ใส่ค่า Environment Variables ทั้ง 2 ตัว (`NEXT_PUBLIC_SUPABASE_URL` และ `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+4. กด **Deploy** — หลังจากนั้นทุกครั้งที่ `git push` ขึ้น Branch `main` ระบบจะอัปเดตเวอร์ชันออนไลน์ให้อัตโนมัติทันที
