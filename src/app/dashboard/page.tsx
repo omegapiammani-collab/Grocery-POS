@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp,
@@ -1410,6 +1410,7 @@ export default function DashboardPage() {
   // Recent bills filter & detail modal
   const [billPaymentFilter, setBillPaymentFilter] = useState<'all' | PaymentMethod | 'cancelled'>('all');
   const [billSearch, setBillSearch] = useState('');
+  const deferredBillSearch = useDeferredValue(billSearch);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [printSeq, setPrintSeq] = useState(0);
   const [printedAt, setPrintedAt] = useState('');
@@ -4244,7 +4245,7 @@ export default function DashboardPage() {
   }, [sales, dailySlots, period]);
 
   const filteredSales = useMemo(() => {
-    const q = billSearch.trim().toLowerCase();
+    const q = deferredBillSearch.trim().toLowerCase();
     return sales.filter((s) => {
       const saleAny = s as Sale & { status?: string; is_cancelled?: boolean };
       const isCancelled =
@@ -4267,7 +4268,7 @@ export default function DashboardPage() {
       const idMatch = s.id.toLowerCase().includes(q);
       return customerName.includes(q) || note.includes(q) || itemsMatch || idMatch;
     });
-  }, [sales, billPaymentFilter, billSearch]);
+  }, [sales, billPaymentFilter, deferredBillSearch]);
 
   const periodDisplayLabel =
     period === 'custom' && customStart && customEnd
@@ -9924,7 +9925,7 @@ export default function DashboardPage() {
                           <tr
                             key={s.id}
                             onClick={() => setSelectedSale(s)}
-                            className="hover:bg-emerald-50/40 cursor-pointer transition-colors"
+                            className="cv-auto-row hover:bg-emerald-50/40 cursor-pointer transition-colors"
                           >
                             <td className="px-4 py-3 text-xs text-slate-600 whitespace-nowrap">
                               {formatDateTime(s.created_at)}

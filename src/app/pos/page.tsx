@@ -1583,6 +1583,7 @@ export default function PosPage() {
   const [showMorePosTools, setShowMorePosTools] = useState(false);
   const [showMoreCartTools, setShowMoreCartTools] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const deferredCustomerSearch = useDeferredValue(customerSearchQuery);
   const [cartItemNotes, setCartItemNotes] = useState<Record<string, string>>({});
   const [editingNoteKey, setEditingNoteKey] = useState<string | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
@@ -4148,6 +4149,17 @@ export default function PosPage() {
     () => products.filter((p) => Boolean(wholesaleTiers[p.id])).length,
     [products, wholesaleTiers]
   );
+
+  const filteredCustomerOptions = useMemo(() => {
+    const q = deferredCustomerSearch.trim().toLowerCase();
+    if (!q) return customers;
+    return customers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.phone ?? '').toLowerCase().includes(q) ||
+        c.id === selectedCustomerId
+    );
+  }, [customers, deferredCustomerSearch, selectedCustomerId]);
 
   const filteredProducts = useMemo(() => {
     const q = deferredSearch.trim().toLowerCase();
@@ -7738,17 +7750,7 @@ export default function PosPage() {
               className="flex-1 min-w-0 h-10 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 focus:border-emerald-500 focus:outline-none"
             >
               <option value="">ลูกค้าทั่วไป (ไม่ระบุสมาชิก)</option>
-              {customers
-                .filter((c) => {
-                  const q = customerSearchQuery.trim().toLowerCase();
-                  if (!q) return true;
-                  return (
-                    c.name.toLowerCase().includes(q) ||
-                    (c.phone ?? '').toLowerCase().includes(q) ||
-                    c.id === selectedCustomerId
-                  );
-                })
-                .map((c) => {
+              {filteredCustomerOptions.map((c) => {
                 const vipPct = defaultDiscounts[c.id] ?? 0;
                 const dueInfo = getCustomerDueInfo(dueDates[c.id], todayIso, c.total_debt);
                 return (
@@ -7770,11 +7772,7 @@ export default function PosPage() {
               <Plus className="h-4 w-4" />
             </button>
           </div>
-          {customerSearchQuery.trim() !== '' &&
-            customers.filter((c) => {
-              const q = customerSearchQuery.trim().toLowerCase();
-              return c.name.toLowerCase().includes(q) || (c.phone ?? '').toLowerCase().includes(q);
-            }).length === 0 && (
+          {deferredCustomerSearch.trim() !== '' && filteredCustomerOptions.length === 0 && (
               <p className="text-[11px] font-medium text-amber-800 px-1">
                 ไม่พบลูกค้าที่ค้นหา — กดปุ่ม + เพื่อเพิ่มลูกค้าใหม่ได้ทันที
               </p>
@@ -9299,17 +9297,7 @@ export default function PosPage() {
                 }`}
               >
                 <option value="">-- ลูกค้าทั่วไป (ไม่ระบุสมาชิก) --</option>
-                {customers
-                  .filter((c) => {
-                    const q = customerSearchQuery.trim().toLowerCase();
-                    if (!q) return true;
-                    return (
-                      c.name.toLowerCase().includes(q) ||
-                      (c.phone ?? '').toLowerCase().includes(q) ||
-                      c.id === selectedCustomerId
-                    );
-                  })
-                  .map((c) => {
+                {filteredCustomerOptions.map((c) => {
                   const vipPct = defaultDiscounts[c.id] ?? 0;
                   const dueInfo = getCustomerDueInfo(dueDates[c.id], todayIso, c.total_debt);
                   return (
@@ -9332,11 +9320,7 @@ export default function PosPage() {
                 เพิ่มลูกค้าด่วน
               </button>
               </div>
-              {customerSearchQuery.trim() !== '' &&
-                customers.filter((c) => {
-                  const q = customerSearchQuery.trim().toLowerCase();
-                  return c.name.toLowerCase().includes(q) || (c.phone ?? '').toLowerCase().includes(q);
-                }).length === 0 && (
+              {deferredCustomerSearch.trim() !== '' && filteredCustomerOptions.length === 0 && (
                   <p className="text-[11px] font-medium text-amber-800 px-1">
                     ไม่พบลูกค้าที่ค้นหา — กดปุ่ม &quot;+ เพิ่มลูกค้าด่วน&quot; ได้ทันที
                   </p>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import {
   Clock,
   Lock,
@@ -1143,6 +1143,7 @@ export default function ShiftsPage() {
   const [copiedTarget, setCopiedTarget] = useState<'active' | 'modal' | null>(null);
   const [copiedLineTarget, setCopiedLineTarget] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState('');
+  const deferredHistorySearch = useDeferredValue(historySearch);
   const [shiftStatusFilter, setShiftStatusFilter] = useState<
     'all' | 'open' | 'closed' | 'diff' | 'grade_c'
   >('all');
@@ -1968,7 +1969,7 @@ export default function ShiftsPage() {
   }, [allShifts, shiftCashierNames]);
 
   const filteredShiftHistory = useMemo(() => {
-    const q = historySearch.trim().toLowerCase();
+    const q = deferredHistorySearch.trim().toLowerCase();
     return allShifts.filter((sh) => {
       if (shiftStatusFilter === 'open' && sh.status !== 'open') return false;
       if (shiftStatusFilter === 'closed' && sh.status !== 'closed') return false;
@@ -2013,7 +2014,7 @@ export default function ShiftsPage() {
         idMatch
       );
     });
-  }, [allShifts, historySearch, shiftStatusFilter, cashierFilter, shiftCashierNames]);
+  }, [allShifts, deferredHistorySearch, shiftStatusFilter, cashierFilter, shiftCashierNames]);
 
   const historySummary = useMemo(() => {
     const effectiveTarget =
@@ -4891,7 +4892,7 @@ export default function ShiftsPage() {
                       <tr
                         key={sh.id}
                         onClick={() => handleViewShiftDetail(sh)}
-                        className="hover:bg-slate-50 cursor-pointer transition-colors"
+                        className="cv-auto-row hover:bg-slate-50 cursor-pointer transition-colors"
                       >
                         <td className="px-4 py-3 text-xs text-slate-600">
                           <div>เปิด: {formatDateTime(sh.opened_at)}</div>
