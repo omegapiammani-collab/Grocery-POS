@@ -10,6 +10,7 @@ target_fingerprint: "sha256:f6acb4ba23a3f15c19d38d831c756df3b627da43ec8a180d74e6
 target_path: "E:\\ระบบร้านขายของชำ POS\\src\\app\\pos\\page.tsx"
 timestamp: 2026-11-25T05-00-03Z
 slug: src-app-pos-page-tsx
+closed: true
 ---
 Method: dual-agent (A: 39fb985e-2981-4aaf-8176-7e2a56be6803 · B: 9c9d657c-eea0-4c24-86e0-d5fff7c5a2a9)
 

@@ -7068,6 +7068,16 @@ export default function PosPage() {
         <div className="flex items-center gap-2">
           <ShoppingBag className="h-5 w-5 text-emerald-600" />
           <h2 className="font-bold text-slate-900">ตะกร้าสินค้า ({cartCount})</h2>
+          {qtyMultiplier > 1 && (
+            <button
+              type="button"
+              onClick={() => setQtyMultiplier(1)}
+              title="กำลังเปิดตัวคูณจำนวนสินค้าอัตโนมัติ — คลิกเพื่อรีเซ็ตกลับเป็น ×1"
+              className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 tabular-nums transition-colors"
+            >
+              กำลังคูณ ×{qtyMultiplier} (รีเซ็ต ×1)
+            </button>
+          )}
         </div>
         {cart.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
@@ -8610,7 +8620,7 @@ export default function PosPage() {
                         </div>
                       )}
 
-                      {(promoLabel || wholesaleTier || shelfLocation || isLow || expiryWarning || substituteNote) && (
+                      {(promoLabel || wholesaleTier || (!isCompact && shelfLocation) || isLow || expiryWarning || (!isCompact && substituteNote)) && (
                         <div
                           className={`flex flex-wrap items-center gap-1 ${
                             isCompact ? 'mt-1.5' : 'mt-2'
@@ -8619,7 +8629,7 @@ export default function PosPage() {
                           {promoLabel && (
                             <span
                               title={`ป้ายโปรโมชั่น: ${promoLabel}`}
-                              className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-rose-500 to-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-2xs max-w-full"
+                              className="inline-flex items-center gap-1 rounded-md bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-2xs max-w-full"
                             >
                               <Tag className="h-2.5 w-2.5 shrink-0" />
                               <span className="truncate">{promoLabel}</span>
@@ -8636,7 +8646,7 @@ export default function PosPage() {
                               </span>
                             </span>
                           )}
-                          {shelfLocation && (
+                          {!isCompact && shelfLocation && (
                             <span
                               title={`ตำแหน่งชั้นวาง: ${shelfLocation}`}
                               className="inline-flex items-center gap-0.5 rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 max-w-full"
@@ -8646,11 +8656,11 @@ export default function PosPage() {
                             </span>
                           )}
                           {isLow && (
-                            <span className="inline-block rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                            <span className="inline-block rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                               ใกล้หมด
                             </span>
                           )}
-                          {substituteNote && (
+                          {!isCompact && substituteNote && (
                             <button
                               type="button"
                               onClick={(e) => {
@@ -8725,7 +8735,7 @@ export default function PosPage() {
               <span className="text-sm font-bold">ดูตะกร้า &amp; คิดเงิน</span>
             </div>
             <span className="text-base font-extrabold tabular-nums">
-              {formatBaht(cartTotal)}
+              {formatBaht(discountAmount > 0 ? finalTotal : cartTotal)}
             </span>
           </button>
         </div>

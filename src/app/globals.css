@@ -32,3 +32,29 @@ dialog::backdrop {
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* Theme browser surfaces to match the store Emerald/Slate palette */
+::selection {
+  background-color: #d1fae5;
+  color: #064e3b;
+}
+
+input,
+textarea,
+select {
+  caret-color: #059669;
+}
+
+:focus-visible {
+  outline: 2px solid #059669;
+  outline-offset: 2px;
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}

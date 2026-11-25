@@ -60,6 +60,7 @@ export function AppShell({
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? 'page' : undefined}
                 className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition-colors ${
                   active
                     ? 'bg-emerald-50 text-emerald-700 font-semibold'
@@ -117,6 +118,7 @@ export function AppShell({
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? 'page' : undefined}
               className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[11px] font-medium transition-colors ${
                 active ? 'text-emerald-600 font-semibold' : 'text-slate-500'
               }`}
