@@ -3,11 +3,29 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+  --surface-page: #f8fafc;
+  --surface-card: #ffffff;
+  --surface-muted: #f1f5f9;
+  --border-subtle: #e2e8f0;
+  --brand-primary: #059669;
+  --brand-primary-hover: #047857;
+  --text-muted: #475569;
+  --status-warning: #d97706;
+  --status-danger: #dc2626;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface-page: var(--surface-page);
+  --color-surface-card: var(--surface-card);
+  --color-surface-muted: var(--surface-muted);
+  --color-border-subtle: var(--border-subtle);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-text-muted: var(--text-muted);
+  --color-status-warning: var(--status-warning);
+  --color-status-danger: var(--status-danger);
   --font-sans: var(--font-noto-sans-thai), var(--font-jakarta), sans-serif;
 }
 
@@ -57,4 +75,15 @@ a {
 * {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
 }

@@ -44,7 +44,14 @@ import {
 import { AppShell } from '@/components/AppShell';
 import { Modal } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
-import { formatBaht, formatDateTime, formatNumber } from '@/lib/format';
+import {
+  formatBaht,
+  formatDateTime,
+  formatExpiryDateTh,
+  formatNumber,
+  parseExpiryDatesMap,
+  parseIsoDateUtcMs,
+} from '@/lib/format';
 import type {
   CartItem,
   Category,
@@ -298,55 +305,6 @@ interface StockAdjustmentMovement {
         cost_price: number;
       }>
     | null;
-}
-
-function parseIsoDateUtcMs(iso: string): number | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
-  if (!match) return null;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const utcMs = Date.UTC(year, month - 1, day);
-  const probe = new Date(utcMs);
-  if (
-    probe.getUTCFullYear() !== year ||
-    probe.getUTCMonth() !== month - 1 ||
-    probe.getUTCDate() !== day
-  ) {
-    return null;
-  }
-  return utcMs;
-}
-
-function parseExpiryDatesMap(raw: string | null): Record<string, string> {
-  if (!raw) return {};
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-    const clean: Record<string, string> = {};
-    for (const [productId, value] of Object.entries(parsed as Record<string, unknown>)) {
-      if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (parseIsoDateUtcMs(trimmed) !== null) {
-          clean[productId] = trimmed;
-        }
-      }
-    }
-    return clean;
-  } catch {
-    return {};
-  }
-}
-
-function formatExpiryDateTh(iso: string): string {
-  const utcMs = parseIsoDateUtcMs(iso);
-  if (utcMs === null) return iso;
-  return new Intl.DateTimeFormat('th-TH', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(utcMs));
 }
 
 function getProductExpiryInfo(
@@ -5032,7 +4990,7 @@ export default function DashboardPage() {
                   onChange={(e) => setCustomStart(e.target.value)}
                   className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none"
                 />
-                <span className="text-slate-400 font-semibold">ถึง</span>
+                <span className="text-slate-500 font-semibold">ถึง</span>
                 <input
                   type="date"
                   aria-label="วันที่สิ้นสุด"
@@ -5202,7 +5160,7 @@ export default function DashboardPage() {
                         </>
                       )}
                     </span>
-                    <span className="tabular-nums text-[11px] text-slate-400">
+                    <span className="tabular-nums text-[11px] text-slate-500">
                       {periodDays > 1
                         ? `เป้าหมายรายวัน: ${formatBaht(dailyGoal)} × ${periodDays} วัน = ${formatBaht(periodGoal)}`
                         : `เป้าหมายปัจจุบัน: ${formatBaht(dailyGoal)} / วัน`}
@@ -5243,7 +5201,7 @@ export default function DashboardPage() {
                         <p className="text-[11px] font-semibold text-slate-500">คะแนนรวม</p>
                         <p className="text-xl font-extrabold text-slate-900">
                           {sc.totalScore}
-                          <span className="text-xs font-semibold text-slate-400">
+                          <span className="text-xs font-semibold text-slate-500">
                             /{sc.maxTotalScore}
                           </span>
                         </p>
@@ -5283,7 +5241,7 @@ export default function DashboardPage() {
                                 {pillar.title}
                               </p>
                               <span
-                                className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-bold ${badgeCls}`}
+                                className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[11px] font-bold ${badgeCls}`}
                               >
                                 {pillar.status}
                               </span>
@@ -5291,11 +5249,11 @@ export default function DashboardPage() {
                             <div className="flex items-baseline justify-between tabular-nums">
                               <span className="text-base font-extrabold text-slate-900">
                                 {pillar.score}
-                                <span className="text-[11px] font-semibold text-slate-400">
+                                <span className="text-[11px] font-semibold text-slate-500">
                                   /{pillar.maxScore}
                                 </span>
                               </span>
-                              <span className="text-[10px] font-semibold text-slate-500">
+                              <span className="text-[11px] font-semibold text-slate-500">
                                 {pct.toFixed(0)}%
                               </span>
                             </div>
@@ -5411,7 +5369,7 @@ export default function DashboardPage() {
                   <p className="text-2xl font-extrabold text-emerald-600 tabular-nums mt-1">
                     {formatBaht(stats.grossProfit)}
                   </p>
-                  <p className="text-xs text-slate-400 mt-1 tabular-nums">
+                  <p className="text-xs text-slate-500 mt-1 tabular-nums">
                     ทุนขาย {formatBaht(stats.totalCost)} · มาร์จิ้น {stats.grossMarginPct.toFixed(1)}%
                   </p>
                   <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-1 text-xs tabular-nums">
@@ -5448,7 +5406,7 @@ export default function DashboardPage() {
                       <span className="font-bold text-emerald-700">{formatBaht(stats.debtCollectedTotal)}</span>
                     </div>
                     {stats.debtCollectedTotal > 0 && (
-                      <div className="text-[11px] text-slate-400 text-right">
+                      <div className="text-[11px] text-slate-500 text-right">
                         สด {formatBaht(stats.debtCollectedCash)} · QR {formatBaht(stats.debtCollectedQr)}
                       </div>
                     )}
@@ -5464,7 +5422,7 @@ export default function DashboardPage() {
                   <p className="text-2xl font-extrabold tabular-nums mt-1">
                     {formatBaht(stats.netCashFlow)}
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-slate-500 mt-1">
                     รับสด+QR+อื่นๆ หักรายจ่าย
                   </p>
                 </div>
@@ -5559,7 +5517,7 @@ export default function DashboardPage() {
                       <span className="text-xs font-medium text-slate-600">
                         บริการเสริม / สินค้านอกรายการ
                       </span>
-                      <span className="rounded-full bg-violet-100 text-violet-700 px-2 py-0.5 text-[10px] font-bold">
+                      <span className="rounded-full bg-violet-100 text-violet-700 px-2 py-0.5 text-[11px] font-bold">
                         {stats.customItemSharePct.toFixed(1)}% ของยอดขาย
                       </span>
                     </div>
@@ -5940,7 +5898,7 @@ export default function DashboardPage() {
                                   <p className="font-semibold text-slate-800 truncate">
                                     {item.product.name}
                                   </p>
-                                  <p className="text-[11px] text-slate-400 tabular-nums">
+                                  <p className="text-[11px] text-slate-500 tabular-nums">
                                     จุดเตือน ≤ {formatNumber(item.lowAlert)} {item.product.base_unit}
                                   </p>
                                 </div>
@@ -6012,7 +5970,7 @@ export default function DashboardPage() {
                                     <p className="font-semibold text-slate-800 truncate">
                                       {product.name}
                                     </p>
-                                    <p className="text-[11px] text-slate-400 tabular-nums">
+                                    <p className="text-[11px] text-slate-500 tabular-nums">
                                       วันหมดอายุ {expiryInfo.formattedDate} · คงเหลือ{' '}
                                       {formatNumber(product.stock_qty)} {product.base_unit}
                                     </p>
@@ -6684,7 +6642,7 @@ export default function DashboardPage() {
                 </div>
 
                 {stats.trendBuckets.length === 0 ? (
-                  <p className="text-sm text-slate-400 py-10 text-center">
+                  <p className="text-sm text-slate-500 py-10 text-center">
                     ยังไม่มีข้อมูลการขายในช่วงเวลานี้
                   </p>
                 ) : (
@@ -6708,7 +6666,7 @@ export default function DashboardPage() {
                             key={b.key}
                             className="flex-1 flex flex-col items-center justify-end gap-1.5 group min-w-[38px]"
                           >
-                            <div className="text-[10px] font-bold text-slate-700 tabular-nums text-center leading-tight">
+                            <div className="text-[11px] font-bold text-slate-700 tabular-nums text-center leading-tight">
                               {b.amount > 0 ? `${formatNumber(b.amount)}฿` : '-'}
                             </div>
                             <div className="w-full h-28 bg-slate-100/80 rounded-xl flex items-end p-1 border border-slate-200/60">
@@ -6727,11 +6685,11 @@ export default function DashboardPage() {
                                 {b.label}
                               </span>
                               {b.subLabel && (
-                                <span className="block text-[10px] text-slate-400 whitespace-nowrap">
+                                <span className="block text-[11px] text-slate-500 whitespace-nowrap">
                                   {b.subLabel}
                                 </span>
                               )}
-                              <span className="block text-[10px] font-semibold text-emerald-700 mt-0.5">
+                              <span className="block text-[11px] font-semibold text-emerald-700 mt-0.5">
                                 {b.count} บิล
                               </span>
                             </div>
@@ -6772,7 +6730,7 @@ export default function DashboardPage() {
                 </div>
 
                 {dailyBreakdown.length === 0 ? (
-                  <p className="text-sm text-slate-400 py-6 text-center">
+                  <p className="text-sm text-slate-500 py-6 text-center">
                     ยังไม่มีข้อมูลรายวันในช่วงเวลาที่เลือก
                   </p>
                 ) : (
@@ -6807,12 +6765,12 @@ export default function DashboardPage() {
                             <tr
                               key={row.dateKey}
                               className={`hover:bg-slate-50/70 transition-colors ${
-                                hasSales ? 'text-slate-800' : 'text-slate-400'
+                                hasSales ? 'text-slate-800' : 'text-slate-500'
                               }`}
                             >
                               <td className="py-2.5 px-3 whitespace-nowrap">
                                 <span className="font-semibold">{row.label}</span>
-                                <span className="ml-1.5 text-xs text-slate-400">
+                                <span className="ml-1.5 text-xs text-slate-500">
                                   ({row.subLabel})
                                 </span>
                               </td>
@@ -6828,7 +6786,7 @@ export default function DashboardPage() {
                               <td
                                 className={`py-2.5 px-3 text-right font-bold whitespace-nowrap ${
                                   !hasSales
-                                    ? 'text-slate-400'
+                                    ? 'text-slate-500'
                                     : row.grossProfit >= 0
                                       ? 'text-emerald-600'
                                       : 'text-rose-600'
@@ -6842,7 +6800,7 @@ export default function DashboardPage() {
                                 <span
                                   className={`inline-block rounded-md px-1.5 py-0.5 text-xs font-bold ${
                                     !hasSales
-                                      ? 'bg-slate-100 text-slate-400'
+                                      ? 'bg-slate-100 text-slate-500'
                                       : row.marginPct >= 0
                                         ? 'bg-emerald-50 text-emerald-700'
                                         : 'bg-rose-50 text-rose-700'
@@ -6910,7 +6868,7 @@ export default function DashboardPage() {
                                   ? `+${formatBaht(avgDailyProfit)}`
                                   : formatBaht(avgDailyProfit)}
                               </td>
-                              <td className="py-2 px-3 text-right whitespace-nowrap rounded-br-lg text-slate-400">
+                              <td className="py-2 px-3 text-right whitespace-nowrap rounded-br-lg text-slate-500">
                                 -
                               </td>
                             </tr>
@@ -6935,7 +6893,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               {stats.activeTradingDaysCount === 0 ? (
-                <p className="text-sm text-slate-400 py-4 text-center">
+                <p className="text-sm text-slate-500 py-4 text-center">
                   ยังไม่มีข้อมูลการขายในช่วงเวลาที่เลือก
                 </p>
               ) : (
@@ -7007,7 +6965,7 @@ export default function DashboardPage() {
               </div>
 
               {sales.length === 0 ? (
-                <p className="text-sm text-slate-400 py-8 text-center">
+                <p className="text-sm text-slate-500 py-8 text-center">
                   ยังไม่มีข้อมูลการขายในช่วงเวลานี้
                 </p>
               ) : (
@@ -7023,7 +6981,7 @@ export default function DashboardPage() {
                         key={d.dayIndex}
                         className="flex flex-col items-center justify-end gap-1.5 min-w-0"
                       >
-                        <div className="text-[10px] sm:text-[11px] font-bold text-slate-700 tabular-nums text-center leading-tight truncate w-full">
+                        <div className="text-[11px] sm:text-[11px] font-bold text-slate-700 tabular-nums text-center leading-tight truncate w-full">
                           {d.amount > 0 ? `${formatNumber(d.amount)}฿` : '-'}
                         </div>
                         <div
@@ -7060,7 +7018,7 @@ export default function DashboardPage() {
                           >
                             {d.shortLabel}
                           </span>
-                          <span className="block text-[10px] font-semibold text-slate-500 mt-0.5 tabular-nums">
+                          <span className="block text-[11px] font-semibold text-slate-500 mt-0.5 tabular-nums">
                             {d.count} บิล
                           </span>
                         </div>
@@ -7091,7 +7049,7 @@ export default function DashboardPage() {
               </div>
 
               {sales.length === 0 ? (
-                <p className="text-sm text-slate-400 py-8 text-center">
+                <p className="text-sm text-slate-500 py-8 text-center">
                   ยังไม่มีข้อมูลการขายในช่วงเวลานี้
                 </p>
               ) : (
@@ -7175,7 +7133,7 @@ export default function DashboardPage() {
               </div>
 
               {stats.activeHourlyStats.length === 0 ? (
-                <p className="text-sm text-slate-400 py-8 text-center">
+                <p className="text-sm text-slate-500 py-8 text-center">
                   ยังไม่มีข้อมูลการขายรายชั่วโมงในช่วงเวลานี้
                 </p>
               ) : (
@@ -7205,12 +7163,12 @@ export default function DashboardPage() {
                               เฉลี่ย {formatBaht(h.avgTicket)}/บิล
                             </span>
                             {isPeakRevenue && (
-                              <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                              <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
                                 ยอดสูงสุด
                               </span>
                             )}
                             {isPeakBills && (
-                              <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                              <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">
                                 บิลสูงสุด
                               </span>
                             )}
@@ -7354,7 +7312,7 @@ export default function DashboardPage() {
                   )}
 
                   {stats.promoProductsStats.items.length === 0 ? (
-                    <p className="text-sm text-slate-400 py-4 text-center">
+                    <p className="text-sm text-slate-500 py-4 text-center">
                       ยังไม่มีบิลขายสินค้าที่ติดป้ายโปรโมชั่นในช่วงเวลานี้
                     </p>
                   ) : (
@@ -7375,7 +7333,7 @@ export default function DashboardPage() {
                             <tr key={row.productId} className="hover:bg-slate-50/70">
                               <td className="py-2 pr-3 font-semibold text-slate-900">
                                 <div>{row.name}</div>
-                                <div className="text-[11px] font-normal text-slate-400">
+                                <div className="text-[11px] font-normal text-slate-500">
                                   {formatNumber(row.billCount)} บิล
                                 </div>
                               </td>
@@ -7530,7 +7488,7 @@ export default function DashboardPage() {
                                   {seg.label}
                                 </span>
                                 {seg.salesSharePct > 0 && (
-                                  <span className="text-[11px] font-normal text-slate-400">
+                                  <span className="text-[11px] font-normal text-slate-500">
                                     {seg.salesSharePct.toFixed(1)}%
                                   </span>
                                 )}
@@ -7560,7 +7518,7 @@ export default function DashboardPage() {
                             </td>
                             <td
                               className={`py-2 pl-2 text-right font-bold ${
-                                seg.totalDebt > 0 ? 'text-rose-600' : 'text-slate-400'
+                                seg.totalDebt > 0 ? 'text-rose-600' : 'text-slate-500'
                               }`}
                             >
                               {formatBaht(seg.totalDebt)}
@@ -7599,7 +7557,7 @@ export default function DashboardPage() {
               </div>
 
               {stats.completedBillsCount === 0 ? (
-                <p className="text-sm text-slate-400 py-8 text-center">
+                <p className="text-sm text-slate-500 py-8 text-center">
                   ยังไม่มีบิลที่ขายสำเร็จในช่วงเวลานี้
                 </p>
               ) : (
@@ -7747,7 +7705,7 @@ export default function DashboardPage() {
               </div>
 
               {stats.categoryStats.length === 0 ? (
-                <p className="text-sm text-slate-400 py-6 text-center">
+                <p className="text-sm text-slate-500 py-6 text-center">
                   ยังไม่มีข้อมูลยอดขายแยกตามหมวดหมู่ในช่วงเวลานี้
                 </p>
               ) : (
@@ -7941,7 +7899,7 @@ export default function DashboardPage() {
               </div>
 
               {stats.supplierStats.length === 0 ? (
-                <p className="text-sm text-slate-400 py-6 text-center">
+                <p className="text-sm text-slate-500 py-6 text-center">
                   ยังไม่มีข้อมูลยอดขายแยกตามร้านค้าส่ง / ซัพพลายเออร์ในช่วงเวลานี้
                 </p>
               ) : (
@@ -8053,7 +8011,7 @@ export default function DashboardPage() {
                                     {sup.name}
                                   </span>
                                 </div>
-                                <span className="text-[11px] font-semibold text-slate-400 shrink-0">
+                                <span className="text-[11px] font-semibold text-slate-500 shrink-0">
                                   {sup.pct.toFixed(1)}%
                                 </span>
                               </div>
@@ -8064,7 +8022,7 @@ export default function DashboardPage() {
                                     className="h-full rounded-full transition-all duration-300"
                                   />
                                 </div>
-                                <span className="text-[11px] text-slate-400 shrink-0">
+                                <span className="text-[11px] text-slate-500 shrink-0">
                                   {formatNumber(sup.productCount)} สินค้า · {formatNumber(sup.itemCount)} รายการ
                                 </span>
                               </div>
@@ -8238,7 +8196,7 @@ export default function DashboardPage() {
                 </div>
                 {(topSortBy === 'revenue' ? stats.topProductsByRevenue : stats.topProductsByProfit)
                   .length === 0 ? (
-                  <p className="text-sm text-slate-400 py-6 text-center">ยังไม่มีข้อมูลการขาย</p>
+                  <p className="text-sm text-slate-500 py-6 text-center">ยังไม่มีข้อมูลการขาย</p>
                 ) : (
                   <div className="divide-y divide-slate-100">
                     {(topSortBy === 'revenue'
@@ -8265,7 +8223,7 @@ export default function DashboardPage() {
                             <span className="font-semibold text-slate-800 block truncate">
                               {item.name}
                             </span>
-                            <span className="text-xs text-slate-400">
+                            <span className="text-xs text-slate-500">
                               ขายได้ {formatNumber(item.qty)} หน่วย
                             </span>
                           </div>
@@ -8317,7 +8275,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 {stats.topProductsByProfit.length === 0 ? (
-                  <p className="text-sm text-slate-400 py-6 text-center">ยังไม่มีข้อมูลการขาย</p>
+                  <p className="text-sm text-slate-500 py-6 text-center">ยังไม่มีข้อมูลการขาย</p>
                 ) : (
                   <div className="divide-y divide-slate-100">
                     {stats.topProductsByProfit.slice(0, 5).map((item, i) => (
@@ -8333,7 +8291,7 @@ export default function DashboardPage() {
                             <span className="font-semibold text-slate-800 block truncate">
                               {item.name}
                             </span>
-                            <span className="text-xs text-slate-400 tabular-nums">
+                            <span className="text-xs text-slate-500 tabular-nums">
                               ขายได้ {formatNumber(item.qty)} หน่วย · ยอดขาย{' '}
                               {formatBaht(item.revenue)}
                             </span>
@@ -8349,7 +8307,7 @@ export default function DashboardPage() {
                               ? `+${formatBaht(item.profit)}`
                               : formatBaht(item.profit)}
                           </span>
-                          <span className="block text-[11px] text-slate-400">กำไรสุทธิ</span>
+                          <span className="block text-[11px] text-slate-500">กำไรสุทธิ</span>
                         </div>
                       </div>
                     ))}
@@ -8387,7 +8345,7 @@ export default function DashboardPage() {
               </div>
 
               {stats.topBasketPairs.length === 0 ? (
-                <p className="text-sm text-slate-400 py-6 text-center">
+                <p className="text-sm text-slate-500 py-6 text-center">
                   {stats.totalBasketBills === 0
                     ? 'ยังไม่มีข้อมูลการขายในช่วงเวลานี้'
                     : `ยังไม่มีบิลที่มีสินค้าตั้งแต่ 2 ชนิดขึ้นไปในช่วงเวลานี้ (มีทั้งหมด ${formatNumber(stats.totalBasketBills)} บิล)`}
@@ -8455,7 +8413,7 @@ export default function DashboardPage() {
                                     }`}
                                   />
                                 </div>
-                                <span className="text-[11px] text-slate-400 tabular-nums shrink-0">
+                                <span className="text-[11px] text-slate-500 tabular-nums shrink-0">
                                   {pair.pctOfMultiBills.toFixed(1)}% ของบิลหลายรายการ
                                 </span>
                               </div>
@@ -8491,7 +8449,7 @@ export default function DashboardPage() {
               </div>
 
               {stats.memberVsWalkIn.totalBills === 0 ? (
-                <p className="text-sm text-slate-400 py-6 text-center">
+                <p className="text-sm text-slate-500 py-6 text-center">
                   ยังไม่มีข้อมูลการขายที่สำเร็จในช่วงเวลานี้
                 </p>
               ) : (
@@ -8664,7 +8622,7 @@ export default function DashboardPage() {
               </div>
 
               {stats.retailVsPackMix.totalItems === 0 ? (
-                <p className="text-sm text-slate-400 py-6 text-center">
+                <p className="text-sm text-slate-500 py-6 text-center">
                   ยังไม่มีข้อมูลรายการสินค้าที่ขายสำเร็จในช่วงเวลานี้
                 </p>
               ) : (
@@ -8784,7 +8742,7 @@ export default function DashboardPage() {
               </div>
 
               {stats.topCustomers.length === 0 ? (
-                <p className="text-sm text-slate-400 py-6 text-center">
+                <p className="text-sm text-slate-500 py-6 text-center">
                   ยังไม่มีรายการขายที่ผูกชื่อลูกค้าประจำในช่วงเวลานี้
                 </p>
               ) : (
@@ -8857,7 +8815,7 @@ export default function DashboardPage() {
                                     <span className="font-semibold text-slate-800 truncate">
                                       {cust.name}
                                     </span>
-                                    <span className="text-[11px] font-semibold text-slate-400 shrink-0">
+                                    <span className="text-[11px] font-semibold text-slate-500 shrink-0">
                                       {sharePct.toFixed(1)}%
                                     </span>
                                   </div>
@@ -8869,7 +8827,7 @@ export default function DashboardPage() {
                                       />
                                     </div>
                                     {cust.phone && (
-                                      <span className="text-[11px] text-slate-400 shrink-0">
+                                      <span className="text-[11px] text-slate-500 shrink-0">
                                         {cust.phone}
                                       </span>
                                     )}
@@ -8888,7 +8846,7 @@ export default function DashboardPage() {
                                   <span className="font-extrabold text-slate-900 block">
                                     {formatBaht(cust.totalSpend)}
                                   </span>
-                                  <span className="text-[11px] text-slate-400 block">
+                                  <span className="text-[11px] text-slate-500 block">
                                     เฉลี่ย {formatBaht(cust.totalSpend / cust.billCount)}/บิล
                                   </span>
                                 </td>
@@ -9009,12 +8967,12 @@ export default function DashboardPage() {
                                     {p.name}
                                   </span>
                                   {p.categoryName && (
-                                    <span className="hidden sm:inline-block shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                    <span className="hidden sm:inline-block shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-600">
                                       {p.categoryName}
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-xs text-slate-400 tabular-nums">
+                                <span className="text-xs text-slate-500 tabular-nums">
                                   คงเหลือ {formatNumber(p.stock_qty)} {p.base_unit} · ทุน/หน่วย{' '}
                                   {formatBaht(p.cost_price)}
                                 </span>
@@ -9024,7 +8982,7 @@ export default function DashboardPage() {
                               <span className="font-bold text-slate-900 block">
                                 {formatBaht(p.tiedUpCost)}
                               </span>
-                              <span className="block text-[11px] text-slate-400">
+                              <span className="block text-[11px] text-slate-500">
                                 ทุนจม ({sharePct.toFixed(1)}%)
                               </span>
                             </div>
@@ -9261,7 +9219,7 @@ export default function DashboardPage() {
                                 {sup.isAssigned ? (
                                   sup.supplierName
                                 ) : (
-                                  <span className="text-slate-400 font-normal">
+                                  <span className="text-slate-500 font-normal">
                                     {sup.supplierName}
                                   </span>
                                 )}
@@ -9386,7 +9344,7 @@ export default function DashboardPage() {
                     รายการปรับลดสต็อกล่าสุด ({formatNumber(stats.recentShrinkageItems.length)} รายการ)
                   </h3>
                   {stats.recentShrinkageItems.length > 0 && (
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-slate-500">
                       เรียงจากรายการล่าสุด
                     </span>
                   )}
@@ -9415,7 +9373,7 @@ export default function DashboardPage() {
                                 {item.productName}
                               </span>
                               {item.categoryName && (
-                                <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-600">
                                   {item.categoryName}
                                 </span>
                               )}
@@ -9431,7 +9389,7 @@ export default function DashboardPage() {
                             <span className="font-bold text-rose-700 block">
                               -{formatBaht(item.costImpact)}
                             </span>
-                            <span className="block text-[11px] text-slate-400">
+                            <span className="block text-[11px] text-slate-500">
                               ทุน {formatBaht(item.unitCost)}/{item.baseUnit}
                             </span>
                           </div>
@@ -9529,7 +9487,7 @@ export default function DashboardPage() {
                     รายการบิลยกเลิก / รับคืนล่าสุด ({formatNumber(stats.voidReturnAuditItems.length)} รายการ)
                   </h3>
                   {stats.voidReturnAuditItems.length > 0 && (
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-slate-500">
                       เรียงจากรายการล่าสุด
                     </span>
                   )}
@@ -9565,7 +9523,7 @@ export default function DashboardPage() {
                                 </span>
                                 {badge && (
                                   <span
-                                    className={`rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${badge.className}`}
+                                    className={`rounded-md border px-1.5 py-0.5 text-[11px] font-semibold ${badge.className}`}
                                   >
                                     {badge.label}
                                   </span>
@@ -9587,7 +9545,7 @@ export default function DashboardPage() {
                                 {formatBaht(item.amount)}
                               </span>
                               {item.type === 'partial_return' && (
-                                <span className="block text-[11px] text-slate-400">
+                                <span className="block text-[11px] text-slate-500">
                                   ยอดบิล {formatBaht(item.billTotal)}
                                 </span>
                               )}
@@ -9689,7 +9647,7 @@ export default function DashboardPage() {
               )}
 
               {expenses.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-6">
+                <p className="text-sm text-slate-500 text-center py-6">
                   ยังไม่มีรายการรายรับ-รายจ่ายในช่วงเวลานี้
                 </p>
               ) : (
@@ -9704,7 +9662,7 @@ export default function DashboardPage() {
                         )}
                         <div className="min-w-0">
                           <p className="font-semibold text-slate-800 truncate">{e.category}</p>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-slate-500">
                             {formatDateTime(e.created_at)}
                             {e.note ? ` · ${e.note}` : ''}
                           </p>
@@ -9723,7 +9681,7 @@ export default function DashboardPage() {
                           type="button"
                           onClick={() => handleDeleteExpense(e)}
                           title="ลบรายการนี้"
-                          className="rounded-lg border border-slate-200 p-1.5 text-slate-400 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                          className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 transition-colors"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -9779,7 +9737,7 @@ export default function DashboardPage() {
               </div>
 
               {stats.expenseBreakdown.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-4">
+                <p className="text-sm text-slate-500 text-center py-4">
                   ยังไม่มีรายการรายจ่ายร้านค้าในช่วงเวลานี้
                 </p>
               ) : (
@@ -9878,20 +9836,20 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="relative flex-1 min-w-[220px] max-w-sm">
-                    <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <Search className="h-4 w-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="text"
                       value={billSearch}
                       onChange={(e) => setBillSearch(e.target.value)}
                       placeholder="ค้นหาชื่อสินค้า, ลูกค้า, หมายเหตุ..."
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-9 pr-8 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-9 pr-8 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-emerald-500 focus:bg-white focus:outline-none"
                     />
                     {billSearch && (
                       <button
                         type="button"
                         onClick={() => setBillSearch('')}
                         aria-label="ล้างคำค้นหา"
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -9901,7 +9859,7 @@ export default function DashboardPage() {
               </div>
 
               {sales.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-8">
+                <p className="text-sm text-slate-500 text-center py-8">
                   ยังไม่มีรายการบิลขายในช่วงเวลานี้
                 </p>
               ) : filteredSales.length === 0 ? (
@@ -9961,7 +9919,7 @@ export default function DashboardPage() {
                                 </span>
                               )}
                               {s.note && (
-                                <span className="ml-1.5 text-slate-400 italic">· {s.note}</span>
+                                <span className="ml-1.5 text-slate-500 italic">· {s.note}</span>
                               )}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap">
@@ -10064,7 +10022,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="p-4 text-xs text-slate-400">กำลังตรวจสอบข้อมูลเสริมในเครื่อง...</div>
+                <div className="p-4 text-xs text-slate-500">กำลังตรวจสอบข้อมูลเสริมในเครื่อง...</div>
               )}
             </div>
           </>
@@ -10186,7 +10144,7 @@ export default function DashboardPage() {
               placeholder="เช่น 0812345678"
               className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm tabular-nums"
             />
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[11px] text-slate-500 mt-1">
               ใช้สำหรับสร้าง QR Code พร้อมยอดเงินอัตโนมัติในหน้าคิดเงิน
             </p>
           </div>
@@ -10266,7 +10224,7 @@ export default function DashboardPage() {
                   รายการสินค้าในบิล ({items.length} รายการ)
                 </h3>
                 {items.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-4 rounded-xl border border-slate-200">
+                  <p className="text-xs text-slate-500 text-center py-4 rounded-xl border border-slate-200">
                     ไม่มีรายละเอียดรายการสินค้าในบิลนี้
                   </p>
                 ) : (
@@ -10680,7 +10638,7 @@ export default function DashboardPage() {
               <p className="text-xs font-extrabold text-slate-900">
                 🏆 ดัชนีสุขภาพร้านค้าครบวงจร 5 มิติ (5-Pillar Store Health Scorecard)
               </p>
-              <p className="text-[10px] text-slate-500">
+              <p className="text-[11px] text-slate-500">
                 สรุปคะแนนประเมินประสิทธิภาพการบริหารร้านค้า 5 มิติหลัก
               </p>
             </div>
@@ -10698,10 +10656,10 @@ export default function DashboardPage() {
               const pct = Math.min(100, Math.max(0, (pillar.score / pillar.maxScore) * 100));
               return (
                 <div key={pillar.id} className="rounded border border-slate-200 p-2 space-y-1">
-                  <p className="text-[10px] font-bold text-slate-800 leading-tight">{pillar.title}</p>
+                  <p className="text-[11px] font-bold text-slate-800 leading-tight">{pillar.title}</p>
                   <p className="text-xs font-extrabold text-slate-900 tabular-nums">
                     {pillar.score}/{pillar.maxScore}{' '}
-                    <span className="text-[10px] font-semibold text-slate-600">
+                    <span className="text-[11px] font-semibold text-slate-600">
                       ({pillar.status})
                     </span>
                   </p>
@@ -10713,7 +10671,7 @@ export default function DashboardPage() {
               );
             })}
           </div>
-          <div className="text-[10px] text-slate-700 bg-slate-50 rounded p-2 border border-slate-200">
+          <div className="text-[11px] text-slate-700 bg-slate-50 rounded p-2 border border-slate-200">
             <span className="font-bold">คำแนะนำอัตโนมัติ: </span>
             {stats.storeHealthScorecard.recommendations.join(' · ')}
           </div>
@@ -10726,7 +10684,7 @@ export default function DashboardPage() {
             <p className="text-base font-extrabold text-slate-900 mt-1">
               {formatBaht(stats.totalSales)}
             </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               เฉลี่ย {formatBaht(stats.avgTicket)}/บิล
             </p>
           </div>
@@ -10735,7 +10693,7 @@ export default function DashboardPage() {
             <p className="text-base font-extrabold text-slate-900 mt-1">
               {formatBaht(stats.totalCost)}
             </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               จากยอดขาย {formatNumber(sales.length)} บิล
             </p>
           </div>
@@ -10744,7 +10702,7 @@ export default function DashboardPage() {
             <p className="text-base font-extrabold text-slate-900 mt-1">
               {formatBaht(stats.grossProfit)}
             </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               มาร์จิ้น {stats.grossMarginPct.toFixed(1)}%
             </p>
           </div>
@@ -10753,7 +10711,7 @@ export default function DashboardPage() {
             <p className="text-base font-extrabold text-slate-900 mt-1">
               {formatBaht(stats.netProfit)}
             </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               รับอื่น +{formatBaht(stats.otherIncome)} / จ่าย -{formatBaht(stats.otherExpense)}
             </p>
           </div>
@@ -10764,7 +10722,7 @@ export default function DashboardPage() {
             <p className="text-base font-extrabold text-slate-900 mt-1">
               {formatNumber(stats.totalItemsSold)} ชิ้น
             </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               จากทั้งหมด {formatNumber(sales.length)} บิล ({formatNumber(stats.allProductStats.length)} รายการสินค้า)
             </p>
           </div>
@@ -10773,7 +10731,7 @@ export default function DashboardPage() {
             <p className="text-base font-extrabold text-slate-900 mt-1">
               {stats.avgItemsPerBill.toFixed(1)} ชิ้น/บิล
             </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               ยอดขายเฉลี่ย {formatBaht(stats.avgTicket)} ต่อบิล
             </p>
           </div>
@@ -10790,7 +10748,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-slate-900 mt-0.5">
                 {formatBaht(stats.avgGrossProfitPerBill)} / บิล
               </p>
-              <p className="text-[10px] text-slate-600 mt-0.5">
+              <p className="text-[11px] text-slate-600 mt-0.5">
                 มาร์จิ้นขั้นต้น {stats.grossMarginPct.toFixed(1)}% (จาก {formatNumber(sales.length)} บิล)
               </p>
             </div>
@@ -10799,7 +10757,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-slate-900 mt-0.5">
                 {formatBaht(stats.avgNetProfitPerBill)} / บิล
               </p>
-              <p className="text-[10px] text-slate-600 mt-0.5">
+              <p className="text-[11px] text-slate-600 mt-0.5">
                 อัตรากำไรสุทธิ {stats.netMarginPct.toFixed(1)}%
               </p>
             </div>
@@ -10810,7 +10768,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-slate-900 mt-0.5">
                 {formatBaht(stats.customItemRevenue)} ({stats.customItemSharePct.toFixed(1)}%)
               </p>
-              <p className="text-[10px] text-slate-600 mt-0.5">
+              <p className="text-[11px] text-slate-600 mt-0.5">
                 กำไร {formatBaht(stats.customItemProfit)} · {formatNumber(stats.customItemQty)} ชิ้น ·{' '}
                 {formatNumber(stats.customItemBillCount)} บิล
               </p>
@@ -10829,7 +10787,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-slate-900 mt-0.5">
                 {stats.grossMarginPct.toFixed(1)}%
               </p>
-              <p className="text-[10px] text-slate-600 mt-0.5">
+              <p className="text-[11px] text-slate-600 mt-0.5">
                 กำไรขั้นต้น {formatBaht(stats.grossProfit)}
               </p>
             </div>
@@ -10838,7 +10796,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-slate-900 mt-0.5">
                 {stats.netMarginPct.toFixed(1)}%
               </p>
-              <p className="text-[10px] text-slate-600 mt-0.5">
+              <p className="text-[11px] text-slate-600 mt-0.5">
                 กำไรสุทธิ {formatBaht(stats.netProfit)}
               </p>
             </div>
@@ -10849,7 +10807,7 @@ export default function DashboardPage() {
                   ? '—'
                   : formatBaht(stats.breakEvenSales)}
               </p>
-              <p className="text-[10px] text-slate-600 mt-0.5">
+              <p className="text-[11px] text-slate-600 mt-0.5">
                 รายจ่ายร้าน {formatBaht(stats.otherExpense)}
               </p>
             </div>
@@ -10862,7 +10820,7 @@ export default function DashboardPage() {
                     ? `เกิน +${formatBaht(stats.breakEvenDiff)}`
                     : `ขาด -${formatBaht(Math.abs(stats.breakEvenDiff))}`}
               </p>
-              <p className="text-[10px] text-slate-600 mt-0.5">
+              <p className="text-[11px] text-slate-600 mt-0.5">
                 {stats.otherExpense === 0
                   ? 'ไม่มีรายจ่ายร้าน'
                   : stats.breakEvenMultiple !== null
@@ -10888,7 +10846,7 @@ export default function DashboardPage() {
                   {stats.bestSalesDay ? formatBaht(stats.bestSalesDay.totalSales) : formatBaht(0)}
                 </p>
                 {stats.bestSalesDay && (
-                  <p className="text-[10px] text-slate-600 mt-0.5">
+                  <p className="text-[11px] text-slate-600 mt-0.5">
                     {stats.bestSalesDay.label} ({stats.bestSalesDay.subLabel}) ·{' '}
                     {formatNumber(stats.bestSalesDay.billCount)} บิล · กำไร{' '}
                     {formatBaht(stats.bestSalesDay.grossProfit)}
@@ -10901,7 +10859,7 @@ export default function DashboardPage() {
                   {stats.bestProfitDay ? formatBaht(stats.bestProfitDay.grossProfit) : formatBaht(0)}
                 </p>
                 {stats.bestProfitDay && (
-                  <p className="text-[10px] text-slate-600 mt-0.5">
+                  <p className="text-[11px] text-slate-600 mt-0.5">
                     {stats.bestProfitDay.label} ({stats.bestProfitDay.subLabel}) · มาร์จิ้น{' '}
                     {stats.bestProfitDay.marginPct.toFixed(1)}% · ยอดขาย{' '}
                     {formatBaht(stats.bestProfitDay.totalSales)}
@@ -10913,7 +10871,7 @@ export default function DashboardPage() {
                 <p className="text-sm font-extrabold text-slate-900 mt-0.5">
                   {formatBaht(stats.avgSalesPerActiveDay)}
                 </p>
-                <p className="text-[10px] text-slate-600 mt-0.5">
+                <p className="text-[11px] text-slate-600 mt-0.5">
                   วันที่มีบิลขายจริง {formatNumber(stats.activeTradingDaysCount)} วัน (
                   {formatNumber(sales.length)} บิล)
                 </p>
@@ -10933,7 +10891,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-slate-900 mt-0.5">
                 {formatBaht(stats.grossSalesBeforeDiscount)}
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 ยอดสุทธิ {formatBaht(stats.totalSales)}
               </p>
             </div>
@@ -10944,7 +10902,7 @@ export default function DashboardPage() {
                   ? `-${formatBaht(stats.totalDiscountGiven)}`
                   : formatBaht(0)}
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 {stats.discountedBillsCount > 0
                   ? `เฉลี่ย ${formatBaht(stats.avgDiscountPerBill)}/บิล`
                   : 'ไม่มีการให้ส่วนลด'}
@@ -10955,7 +10913,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-slate-900 mt-0.5">
                 {formatNumber(stats.discountedBillsCount)} บิล
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 {stats.discountedBillsPct.toFixed(1)}% ของ {formatNumber(sales.length)} บิล
               </p>
             </div>
@@ -10964,7 +10922,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-slate-900 mt-0.5">
                 {stats.discountRatePct.toFixed(1)}%
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 {stats.grossSalesBeforeDiscount > 0
                   ? `รับจริง ${(100 - stats.discountRatePct).toFixed(1)}%`
                   : '-'}
@@ -10980,7 +10938,7 @@ export default function DashboardPage() {
               วิเคราะห์การปล่อยเชื่อ vs การรับชำระหนี้ (Credit vs Debt Collection Health)
             </h2>
             <span
-              className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+              className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${
                 stats.creditLiquidityStatus === 'สภาพคล่องดีเยี่ยม'
                   ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
                   : stats.creditLiquidityStatus === 'ควรเร่งติดตามหนี้ค้าง'
@@ -10997,7 +10955,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-amber-800 mt-0.5">
                 {formatBaht(stats.creditSales)}
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 {formatNumber(stats.creditCount)} บิล ({stats.creditPct.toFixed(1)}% ของยอดขาย)
               </p>
             </div>
@@ -11006,11 +10964,11 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-emerald-700 mt-0.5">
                 {formatBaht(stats.debtCollectedTotal)}
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 รับชำระ {formatNumber(stats.debtPaymentCount)} ครั้ง
               </p>
               {stats.debtWaivedTotal > 0 && (
-                <p className="text-[10px] font-semibold text-amber-700 mt-0.5">
+                <p className="text-[11px] font-semibold text-amber-700 mt-0.5">
                   ยกเว้นเศษหนี้ {formatBaht(stats.debtWaivedTotal)}
                 </p>
               )}
@@ -11041,7 +10999,7 @@ export default function DashboardPage() {
                     ? `-${formatBaht(Math.abs(stats.creditCollectionNet))}`
                     : formatBaht(0)}
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 {stats.creditCollectionRatePct !== null
                   ? `อัตราเก็บหนี้ ${stats.creditCollectionRatePct.toFixed(1)}%`
                   : stats.debtCollectedTotal > 0
@@ -11265,7 +11223,7 @@ export default function DashboardPage() {
                   ))}
                 </tbody>
               </table>
-              <p className="text-[10px] text-slate-500 mt-1.5">
+              <p className="text-[11px] text-slate-500 mt-1.5">
                 คำแนะนำ: ใช้จัดวางคู่สินค้าไว้ใกล้กันบนชั้นวาง หรือนำไปสร้างชุดสินค้าขายด่วนในหน้า POS
               </p>
             </>
@@ -11520,7 +11478,7 @@ export default function DashboardPage() {
                     <td className="py-1.5 px-2 font-semibold text-slate-900">
                       {cust.name}
                       {cust.phone ? (
-                        <span className="ml-1.5 text-[10px] font-normal text-slate-500">
+                        <span className="ml-1.5 text-[11px] font-normal text-slate-500">
                           ({cust.phone})
                         </span>
                       ) : null}
@@ -11617,7 +11575,7 @@ export default function DashboardPage() {
                   <tr key={sup.key}>
                     <td className="py-1.5 px-2 font-semibold text-slate-900">
                       {sup.name}
-                      <span className="ml-1.5 text-[10px] font-normal text-slate-500">
+                      <span className="ml-1.5 text-[11px] font-normal text-slate-500">
                         ({formatNumber(sup.productCount)} สินค้า)
                       </span>
                     </td>
@@ -11663,38 +11621,38 @@ export default function DashboardPage() {
           </div>
           <div className="grid grid-cols-4 gap-2 text-xs">
             <div className="rounded border border-slate-300 bg-slate-50 p-2">
-              <span className="text-[10px] text-slate-500 block">มูลค่าทุนสต็อกรวม</span>
+              <span className="text-[11px] text-slate-500 block">มูลค่าทุนสต็อกรวม</span>
               <span className="font-extrabold text-slate-900 text-sm">
                 {formatBaht(stats.totalInventoryCapitalCost)}
               </span>
-              <span className="block text-[10px] text-slate-600">
+              <span className="block text-[11px] text-slate-600">
                 {formatNumber(stats.totalInventoryCapitalCount)} รายการ
               </span>
             </div>
             <div className="rounded border border-emerald-200 bg-emerald-50 p-2">
-              <span className="text-[10px] text-emerald-700 block">Active Moving (มีขาย)</span>
+              <span className="text-[11px] text-emerald-700 block">Active Moving (มีขาย)</span>
               <span className="font-extrabold text-emerald-800 text-sm">
                 {formatBaht(stats.activeMovingCost)}
               </span>
-              <span className="block text-[10px] text-emerald-700">
+              <span className="block text-[11px] text-emerald-700">
                 {stats.activeMovingSharePct.toFixed(1)}% · {formatNumber(stats.activeMovingCount)} รายการ
               </span>
             </div>
             <div className="rounded border border-amber-200 bg-amber-50 p-2">
-              <span className="text-[10px] text-amber-800 block">Non-Moving (ทุนจม)</span>
+              <span className="text-[11px] text-amber-800 block">Non-Moving (ทุนจม)</span>
               <span className="font-extrabold text-amber-800 text-sm">
                 {formatBaht(stats.totalZeroMovingCost)}
               </span>
-              <span className="block text-[10px] text-amber-800">
+              <span className="block text-[11px] text-amber-800">
                 {stats.nonMovingSharePct.toFixed(1)}% · {formatNumber(stats.zeroMovingProducts.length)} รายการ
               </span>
             </div>
             <div className="rounded border border-rose-200 bg-rose-50 p-2">
-              <span className="text-[10px] text-rose-700 block">ทุนเสี่ยงหมดอายุ/หมดอายุแล้ว</span>
+              <span className="text-[11px] text-rose-700 block">ทุนเสี่ยงหมดอายุ/หมดอายุแล้ว</span>
               <span className="font-extrabold text-rose-700 text-sm">
                 {formatBaht(stats.atRiskExpiryCost)}
               </span>
-              <span className="block text-[10px] text-rose-700">
+              <span className="block text-[11px] text-rose-700">
                 {stats.atRiskExpirySharePct.toFixed(1)}% · หมดอายุ {formatNumber(stats.expiredStockCount)} / ใกล้หมด {formatNumber(stats.expiringSoonStockCount)}
               </span>
             </div>
@@ -11713,31 +11671,31 @@ export default function DashboardPage() {
           </div>
           <div className="grid grid-cols-3 gap-2 text-xs mb-2">
             <div className="rounded border border-rose-200 bg-rose-50 p-2">
-              <span className="text-[10px] text-rose-700 block">งบสั่งซื้อเร่งด่วน (ขั้นวิกฤต)</span>
+              <span className="text-[11px] text-rose-700 block">งบสั่งซื้อเร่งด่วน (ขั้นวิกฤต)</span>
               <span className="font-extrabold text-rose-700 text-sm">
                 {formatBaht(stats.criticalRestockBudget)}
               </span>
-              <span className="block text-[10px] text-rose-700">
+              <span className="block text-[11px] text-rose-700">
                 {formatNumber(stats.criticalRestockCount)} รายการ (หมด {formatNumber(stats.criticalOutOfStockCount)}) · {formatNumber(stats.criticalRestockUnits)} หน่วย
               </span>
             </div>
             <div className="rounded border border-indigo-200 bg-indigo-50 p-2">
-              <span className="text-[10px] text-indigo-700 block">งบเติมเต็มเป้าชั้นวาง (รวมทั้งหมด)</span>
+              <span className="text-[11px] text-indigo-700 block">งบเติมเต็มเป้าชั้นวาง (รวมทั้งหมด)</span>
               <span className="font-extrabold text-indigo-700 text-sm">
                 {formatBaht(stats.fullTargetRestockBudget)}
               </span>
-              <span className="block text-[10px] text-indigo-700">
+              <span className="block text-[11px] text-indigo-700">
                 {formatNumber(stats.belowTargetRestockCount)} รายการ · {formatNumber(stats.fullTargetRestockUnits)} หน่วย
               </span>
             </div>
             <div className="rounded border border-slate-300 bg-slate-50 p-2">
-              <span className="text-[10px] text-slate-600 block">งบเพิ่มเติมจากขั้นวิกฤต</span>
+              <span className="text-[11px] text-slate-600 block">งบเพิ่มเติมจากขั้นวิกฤต</span>
               <span className="font-extrabold text-slate-900 text-sm">
                 {formatBaht(
                   Math.max(0, stats.fullTargetRestockBudget - stats.criticalRestockBudget)
                 )}
               </span>
-              <span className="block text-[10px] text-slate-600">
+              <span className="block text-[11px] text-slate-600">
                 {formatNumber(Math.max(0, stats.belowTargetRestockCount - stats.criticalRestockCount))} รายการรอเติมเต็มชั้นวาง
               </span>
             </div>
@@ -11797,7 +11755,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-rose-700 mt-0.5">
                 {stats.shrinkageCostTotal > 0 ? `-${formatBaht(stats.shrinkageCostTotal)}` : formatBaht(0)}
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 {formatNumber(stats.shrinkageCount)} ครั้ง · {formatNumber(stats.shrinkageUnitsTotal)} หน่วย
               </p>
             </div>
@@ -11808,7 +11766,7 @@ export default function DashboardPage() {
                   ? `+${formatBaht(stats.adjustmentAddCostTotal)}`
                   : formatBaht(0)}
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 {formatNumber(stats.adjustmentAddCount)} ครั้ง · {formatNumber(stats.adjustmentAddUnitsTotal)} หน่วย
               </p>
             </div>
@@ -11821,7 +11779,7 @@ export default function DashboardPage() {
                     ? `-${formatBaht(Math.abs(stats.netAdjustmentCost))}`
                     : formatBaht(0)}
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 รวมปรับยอดทั้งหมด {formatNumber(stats.totalAdjustmentCount)} รายการ
               </p>
             </div>
@@ -11864,7 +11822,7 @@ export default function DashboardPage() {
                 </tbody>
               </table>
               {stats.recentShrinkageItems.length > 15 && (
-                <p className="text-[10px] text-slate-500 mt-1">
+                <p className="text-[11px] text-slate-500 mt-1">
                   แสดง 15 รายการล่าสุด จากทั้งหมด {formatNumber(stats.recentShrinkageItems.length)} รายการปรับลดสต็อก
                 </p>
               )}
@@ -11889,7 +11847,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-rose-700 mt-0.5">
                 {formatBaht(stats.cancelledSalesAmount)}
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 {formatNumber(stats.cancelledSalesCount)} บิล
               </p>
             </div>
@@ -11898,7 +11856,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-amber-800 mt-0.5">
                 {formatBaht(stats.partialReturnRefundTotal)}
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 {formatNumber(stats.partialReturnBillsCount)} บิลที่มีการคืนเงิน
               </p>
             </div>
@@ -11907,7 +11865,7 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-slate-900 mt-0.5">
                 {formatBaht(stats.voidReturnTotalImpact)}
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 รวม {formatNumber(stats.cancelledSalesCount + stats.partialReturnBillsCount)} รายการ
               </p>
             </div>
@@ -11954,7 +11912,7 @@ export default function DashboardPage() {
                 </tbody>
               </table>
               {stats.voidReturnAuditItems.length > 15 && (
-                <p className="text-[10px] text-slate-500 mt-1">
+                <p className="text-[11px] text-slate-500 mt-1">
                   แสดง 15 รายการล่าสุด จากทั้งหมด {formatNumber(stats.voidReturnAuditItems.length)} รายการยกเลิก/รับคืน
                 </p>
               )}
@@ -11976,29 +11934,29 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div className="rounded border border-slate-200 p-2 bg-rose-50/40">
-              <div className="text-[10px] text-slate-500">รายจ่ายร้านรวม</div>
+              <div className="text-[11px] text-slate-500">รายจ่ายร้านรวม</div>
               <div className="font-bold text-rose-700 text-sm tabular-nums">
                 {formatBaht(stats.otherExpense)}
               </div>
-              <div className="text-[10px] text-slate-500 tabular-nums">
+              <div className="text-[11px] text-slate-500 tabular-nums">
                 {formatNumber(stats.expenseTotalCount)} รายการ · {formatNumber(stats.expenseBreakdown.length)} หมวดหมู่
               </div>
             </div>
             <div className="rounded border border-slate-200 p-2 bg-amber-50/40">
-              <div className="text-[10px] text-slate-500">สัดส่วนต่อยอดขายสุทธิ</div>
+              <div className="text-[11px] text-slate-500">สัดส่วนต่อยอดขายสุทธิ</div>
               <div className="font-bold text-amber-800 text-sm tabular-nums">
                 {stats.expenseToSalesPct.toFixed(1)}%
               </div>
-              <div className="text-[10px] text-slate-500 tabular-nums">
+              <div className="text-[11px] text-slate-500 tabular-nums">
                 เทียบยอดขายสุทธิ {formatBaht(stats.totalSales)}
               </div>
             </div>
             <div className="rounded border border-slate-200 p-2 bg-slate-50">
-              <div className="text-[10px] text-slate-500">หมวดรายจ่ายสูงสุด</div>
+              <div className="text-[11px] text-slate-500">หมวดรายจ่ายสูงสุด</div>
               <div className="font-bold text-slate-900 text-sm truncate">
                 {stats.topExpenseCategory ? stats.topExpenseCategory.category : 'ไม่มีรายจ่าย'}
               </div>
-              <div className="text-[10px] text-slate-500 tabular-nums">
+              <div className="text-[11px] text-slate-500 tabular-nums">
                 {stats.topExpenseCategory
                   ? `${formatBaht(stats.topExpenseCategory.amount)} (${stats.topExpenseCategory.sharePct.toFixed(1)}%)`
                   : '—'}
@@ -12071,27 +12029,27 @@ export default function DashboardPage() {
             <>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="rounded border border-emerald-200 bg-emerald-50/40 p-2">
-                  <div className="text-[10px] text-slate-500">ชั่วโมงทำเงินสูงสุด (Peak by Revenue)</div>
+                  <div className="text-[11px] text-slate-500">ชั่วโมงทำเงินสูงสุด (Peak by Revenue)</div>
                   <div className="font-bold text-emerald-800 text-sm tabular-nums">
                     {stats.peakHourByRevenue
                       ? `${stats.peakHourByRevenue.rangeLabel} · ${formatBaht(stats.peakHourByRevenue.amount)}`
                       : '—'}
                   </div>
                   {stats.peakHourByRevenue && (
-                    <div className="text-[10px] text-slate-600 tabular-nums">
+                    <div className="text-[11px] text-slate-600 tabular-nums">
                       {formatNumber(stats.peakHourByRevenue.count)} บิล ({stats.peakHourByRevenue.pct.toFixed(1)}% ของยอดขาย)
                     </div>
                   )}
                 </div>
                 <div className="rounded border border-amber-200 bg-amber-50/40 p-2">
-                  <div className="text-[10px] text-slate-500">ชั่วโมงบิลหนาแน่นสุด (Peak by Bills)</div>
+                  <div className="text-[11px] text-slate-500">ชั่วโมงบิลหนาแน่นสุด (Peak by Bills)</div>
                   <div className="font-bold text-amber-800 text-sm tabular-nums">
                     {stats.peakHourByBills
                       ? `${stats.peakHourByBills.rangeLabel} · ${formatNumber(stats.peakHourByBills.count)} บิล`
                       : '—'}
                   </div>
                   {stats.peakHourByBills && (
-                    <div className="text-[10px] text-slate-600 tabular-nums">
+                    <div className="text-[11px] text-slate-600 tabular-nums">
                       ยอดขาย {formatBaht(stats.peakHourByBills.amount)} · เฉลี่ย {formatBaht(stats.peakHourByBills.avgTicket)}/บิล
                     </div>
                   )}
@@ -12122,12 +12080,12 @@ export default function DashboardPage() {
                         <td className="py-1.5 px-2 font-semibold text-slate-900">
                           {h.rangeLabel}
                           {isPeakRev && (
-                            <span className="ml-1.5 text-[10px] font-bold text-emerald-700">
+                            <span className="ml-1.5 text-[11px] font-bold text-emerald-700">
                               [ยอดสูงสุด]
                             </span>
                           )}
                           {isPeakBill && (
-                            <span className="ml-1.5 text-[10px] font-bold text-amber-700">
+                            <span className="ml-1.5 text-[11px] font-bold text-amber-700">
                               [บิลสูงสุด]
                             </span>
                           )}
@@ -12175,31 +12133,31 @@ export default function DashboardPage() {
             <>
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div className="rounded border border-rose-200 bg-rose-50/40 p-2">
-                  <div className="text-[10px] text-slate-500">ยอดขายสินค้าโปรโมชั่น</div>
+                  <div className="text-[11px] text-slate-500">ยอดขายสินค้าโปรโมชั่น</div>
                   <div className="font-bold text-rose-800 text-sm tabular-nums">
                     {formatBaht(stats.promoProductsStats.totalRevenue)}
                   </div>
-                  <div className="text-[10px] text-slate-600 tabular-nums">
+                  <div className="text-[11px] text-slate-600 tabular-nums">
                     {stats.promoProductsStats.revenueSharePct.toFixed(1)}% ของยอดขายรวม (
                     {formatNumber(stats.promoProductsStats.totalBillsCount)} บิล)
                   </div>
                 </div>
                 <div className="rounded border border-amber-200 bg-amber-50/40 p-2">
-                  <div className="text-[10px] text-slate-500">จำนวนชิ้นที่ขายได้</div>
+                  <div className="text-[11px] text-slate-500">จำนวนชิ้นที่ขายได้</div>
                   <div className="font-bold text-amber-800 text-sm tabular-nums">
                     {formatNumber(stats.promoProductsStats.totalQty)} ชิ้น
                   </div>
-                  <div className="text-[10px] text-slate-600 tabular-nums">
+                  <div className="text-[11px] text-slate-600 tabular-nums">
                     {formatNumber(stats.promoProductsStats.soldPromoProductsCount)} /{' '}
                     {formatNumber(stats.promoProductsStats.totalLabeledProducts)} รายการที่ติดป้าย
                   </div>
                 </div>
                 <div className="rounded border border-emerald-200 bg-emerald-50/40 p-2">
-                  <div className="text-[10px] text-slate-500">กำไรขั้นต้นสินค้าโปรโมชั่น</div>
+                  <div className="text-[11px] text-slate-500">กำไรขั้นต้นสินค้าโปรโมชั่น</div>
                   <div className="font-bold text-emerald-800 text-sm tabular-nums">
                     {formatBaht(stats.promoProductsStats.totalProfit)}
                   </div>
-                  <div className="text-[10px] text-slate-600 tabular-nums">
+                  <div className="text-[11px] text-slate-600 tabular-nums">
                     GP {stats.promoProductsStats.grossMarginPct.toFixed(1)}% (
                     {stats.promoProductsStats.profitSharePct.toFixed(1)}% ของกำไรรวม)
                   </div>
@@ -12267,30 +12225,30 @@ export default function DashboardPage() {
             <>
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div className="rounded border border-indigo-200 bg-indigo-50/40 p-2">
-                  <div className="text-[10px] text-slate-500">ยอดขายลูกค้าที่จัดกลุ่ม</div>
+                  <div className="text-[11px] text-slate-500">ยอดขายลูกค้าที่จัดกลุ่ม</div>
                   <div className="font-bold text-indigo-800 text-sm tabular-nums">
                     {formatBaht(stats.customerSegmentStats.totalTaggedSales)}
                   </div>
-                  <div className="text-[10px] text-slate-600 tabular-nums">
+                  <div className="text-[11px] text-slate-600 tabular-nums">
                     {stats.customerSegmentStats.taggedSalesSharePct.toFixed(1)}% ของยอดขายรวม (
                     {formatNumber(stats.customerSegmentStats.totalTaggedBills)} บิล)
                   </div>
                 </div>
                 <div className="rounded border border-sky-200 bg-sky-50/40 p-2">
-                  <div className="text-[10px] text-slate-500">จำนวนลูกค้าที่จัดกลุ่ม</div>
+                  <div className="text-[11px] text-slate-500">จำนวนลูกค้าที่จัดกลุ่ม</div>
                   <div className="font-bold text-sky-800 text-sm tabular-nums">
                     {formatNumber(stats.customerSegmentStats.totalTaggedCustomers)} ราย
                   </div>
-                  <div className="text-[10px] text-slate-600 tabular-nums">
+                  <div className="text-[11px] text-slate-600 tabular-nums">
                     จากทั้งหมด {formatNumber(stats.customerSegmentStats.totalCustomersCount)} ราย
                   </div>
                 </div>
                 <div className="rounded border border-rose-200 bg-rose-50/40 p-2">
-                  <div className="text-[10px] text-slate-500">หนี้ค้างชำระรวมทุกลูกค้า</div>
+                  <div className="text-[11px] text-slate-500">หนี้ค้างชำระรวมทุกลูกค้า</div>
                   <div className="font-bold text-rose-700 text-sm tabular-nums">
                     {formatBaht(stats.customerSegmentStats.totalCustomerDebt)}
                   </div>
-                  <div className="text-[10px] text-slate-600 tabular-nums">
+                  <div className="text-[11px] text-slate-600 tabular-nums">
                     กลุ่มที่จัดป้าย {formatBaht(stats.customerSegmentStats.totalTaggedDebt)}
                   </div>
                 </div>

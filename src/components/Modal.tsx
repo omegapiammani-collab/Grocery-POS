@@ -60,12 +60,12 @@ export function Modal({
           type="button"
           onClick={handleClose}
           aria-label="ปิดหน้าต่าง"
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
       </div>
-      <div className="overflow-y-auto p-5">{children}</div>
+      <div className="overflow-y-auto p-5">{open ? children : null}</div>
     </dialog>
   );
 }

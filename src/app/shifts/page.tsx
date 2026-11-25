@@ -410,14 +410,14 @@ function CashierNameSelector({
     <div>
       <label className="block text-xs font-semibold text-slate-600 mb-1">{label}</label>
       <div className="relative">
-        <UserCheck className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <UserCheck className="h-4 w-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           type="text"
           value={value}
           autoFocus={autoFocus}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={`w-full rounded-xl border border-slate-300 bg-white pl-9 pr-8 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none ${
+          className={`w-full rounded-xl border border-slate-300 bg-white pl-9 pr-8 text-sm text-slate-900 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none ${
             compact ? 'py-2' : 'py-2.5'
           }`}
         />
@@ -426,7 +426,7 @@ function CashierNameSelector({
             type="button"
             onClick={() => onChange('')}
             aria-label="ล้างชื่อผู้ดูแลกะ"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -839,7 +839,7 @@ function InShiftDebtPaymentsTable({
       </div>
 
       {payments.length === 0 ? (
-        <p className="text-xs text-slate-400 py-1">ยังไม่มีรายการรับชำระหนี้ในกะนี้</p>
+        <p className="text-xs text-slate-500 py-1">ยังไม่มีรายการรับชำระหนี้ในกะนี้</p>
       ) : (
         <div className="overflow-x-auto max-h-60 overflow-y-auto rounded-lg border border-slate-200 bg-white">
           <table className="w-full text-xs border-collapse tabular-nums">
@@ -875,7 +875,7 @@ function InShiftDebtPaymentsTable({
                     </td>
                     <td className="py-2 px-2.5 whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${
+                        className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-bold ${
                           dp.payment_method === 'cash'
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : 'bg-sky-50 text-sky-700 border-sky-200'
@@ -890,7 +890,7 @@ function InShiftDebtPaymentsTable({
                     <td className="py-2 px-2.5 text-right whitespace-nowrap">
                       <div className="inline-flex items-center justify-end gap-1.5">
                         {waivedAmount > 0 && (
-                          <span className="rounded bg-emerald-50 border border-emerald-200 px-1 py-0.5 text-[10px] font-bold text-emerald-700">
+                          <span className="rounded bg-emerald-50 border border-emerald-200 px-1 py-0.5 text-[11px] font-bold text-emerald-700">
                             รับจริง
                           </span>
                         )}
@@ -900,7 +900,7 @@ function InShiftDebtPaymentsTable({
                       </div>
                       {waivedAmount > 0 && (
                         <div className="mt-0.5 flex items-center justify-end gap-1">
-                          <span className="rounded bg-amber-50 border border-amber-200 px-1 py-0.5 text-[10px] font-semibold text-amber-800">
+                          <span className="rounded bg-amber-50 border border-amber-200 px-1 py-0.5 text-[11px] font-semibold text-amber-800">
                             ยกเว้น/ลดหนี้ {formatBaht(waivedAmount)}
                           </span>
                         </div>
@@ -976,7 +976,7 @@ function ShiftExpenseCategorySummary({
                 <span className="font-extrabold tabular-nums text-rose-700">
                   -{formatBaht(g.amount)}
                 </span>
-                <span className="rounded bg-white/80 px-1 py-0.5 text-[10px] font-bold text-rose-700 tabular-nums">
+                <span className="rounded bg-white/80 px-1 py-0.5 text-[11px] font-bold text-rose-700 tabular-nums">
                   {g.pct.toFixed(1)}%
                 </span>
               </div>
@@ -3345,7 +3345,7 @@ export default function ShiftsPage() {
               </div>
             </div>
           ) : (
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               ไม่มีข้อความฝากส่งต่อกะ — กดปุ่ม &ldquo;ฝากข้อความถึงกะถัดไป&rdquo; หรือกรอกได้ตอนปิดกะ
             </p>
           )}
@@ -3931,7 +3931,7 @@ export default function ShiftsPage() {
                 </div>
               </div>
               {expensesListInShift.length === 0 ? (
-                <p className="text-xs text-slate-400 py-1">
+                <p className="text-xs text-slate-500 py-1">
                   ยังไม่มีรายการนำเงินสดออกจากลิ้นชักหรือรับเงินสดพิเศษในกะนี้
                 </p>
               ) : (
@@ -3967,7 +3967,7 @@ export default function ShiftsPage() {
                       onChange={(e) => setActiveExpenseSearch(e.target.value)}
                       placeholder="ค้นหาหมายเหตุ..."
                       aria-label="ค้นหาหมายเหตุรายการรับจ่ายในกะ"
-                      className="w-full sm:w-48 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none"
+                      className="w-full sm:w-48 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-800 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
                     />
                   </div>
                   {(() => {
@@ -3978,7 +3978,7 @@ export default function ShiftsPage() {
                     );
                     if (filteredActiveExpenses.length === 0) {
                       return (
-                        <p className="text-xs text-slate-400 py-2 text-center">
+                        <p className="text-xs text-slate-500 py-2 text-center">
                           ไม่พบรายการที่ตรงกับตัวกรอง
                         </p>
                       );
@@ -4004,7 +4004,7 @@ export default function ShiftsPage() {
                             {exp.note && (
                               <span className="text-slate-500 ml-1.5">· {exp.note}</span>
                             )}
-                            <span className="block text-[11px] text-slate-400">
+                            <span className="block text-[11px] text-slate-500">
                               {formatDateTime(exp.created_at)}
                             </span>
                           </div>
@@ -4090,7 +4090,7 @@ export default function ShiftsPage() {
                 )}
               </div>
               {topProductsInShift.length === 0 ? (
-                <p className="text-xs text-slate-400 py-1">
+                <p className="text-xs text-slate-500 py-1">
                   ยังไม่มีรายการขายสินค้าในกะนี้
                 </p>
               ) : (
@@ -4127,7 +4127,7 @@ export default function ShiftsPage() {
                 <p className="text-xs text-slate-300">
                   เงินสดที่ควรมีในลิ้นชัก (ตั้งต้น + ขายสด + รับหนี้สด - รายจ่าย)
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   จำนวนบิลในกะนี้: {salesInShift.length} บิล · ยอดขายรวมทุกช่องทาง{' '}
                   {formatBaht(summary.totalSales)}
                 </p>
@@ -4226,7 +4226,7 @@ export default function ShiftsPage() {
                             >
                               {denom.toLocaleString()} ฿
                             </span>
-                            <span className="text-slate-400">
+                            <span className="text-slate-500">
                               {isBanknote ? 'ใบ' : 'เหรียญ'}
                             </span>
                           </div>
@@ -4240,7 +4240,7 @@ export default function ShiftsPage() {
                             onChange={(e) => handleOpeningDenomChange(denom, e.target.value)}
                             className="w-full rounded-md border border-slate-300 px-2 py-1 text-right text-sm font-bold tabular-nums focus:border-emerald-500 focus:outline-none"
                           />
-                          <div className="text-[10px] text-right text-slate-500 tabular-nums">
+                          <div className="text-[11px] text-right text-slate-500 tabular-nums">
                             = {(denom * qty).toLocaleString()} ฿
                           </div>
                         </div>
@@ -4303,7 +4303,7 @@ export default function ShiftsPage() {
           </div>
 
           {cashierPerformanceStats.length === 0 ? (
-            <div className="p-6 text-center text-sm text-slate-400">
+            <div className="p-6 text-center text-sm text-slate-500">
               ยังไม่มีประวัติกะที่ปิดแล้วสำหรับสรุปผลงานผู้ดูแลกะ
             </div>
           ) : (
@@ -4370,7 +4370,7 @@ export default function ShiftsPage() {
                                   <span>{row.cashierName}</span>
                                 </span>
                               )}
-                              <span className="text-[11px] font-semibold text-slate-400">
+                              <span className="text-[11px] font-semibold text-slate-500">
                                 {row.sharePct.toFixed(1)}%
                               </span>
                             </div>
@@ -4383,7 +4383,7 @@ export default function ShiftsPage() {
                                   }`}
                                 />
                               </div>
-                              <span className="text-[11px] text-slate-400 shrink-0">
+                              <span className="text-[11px] text-slate-500 shrink-0">
                                 {formatNumber(row.totalBills)} บิล
                               </span>
                             </div>
@@ -4409,14 +4409,14 @@ export default function ShiftsPage() {
                                 className={`h-3.5 w-3.5 ${
                                   row.exactMatchCount === row.closedCount
                                     ? 'text-emerald-600'
-                                    : 'text-slate-400'
+                                    : 'text-slate-500'
                                 }`}
                               />
                               <span>
                                 {formatNumber(row.exactMatchCount)} / {formatNumber(row.closedCount)} กะ
                               </span>
                             </span>
-                            <span className="block text-[11px] text-slate-400">
+                            <span className="block text-[11px] text-slate-500">
                               ({row.exactMatchRatePct.toFixed(0)}%)
                             </span>
                           </td>
@@ -4451,7 +4451,7 @@ export default function ShiftsPage() {
                               {formatBaht(row.totalSafeHandover)}
                             </div>
                             {row.totalSafeDropInShift > 0 && (
-                              <div className="text-[11px] text-slate-400">
+                              <div className="text-[11px] text-slate-500">
                                 ระหว่างกะ {formatBaht(row.totalSafeDropInShift)}
                               </div>
                             )}
@@ -4566,20 +4566,20 @@ export default function ShiftsPage() {
             </div>
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <div className="relative flex-1 sm:w-64">
-                <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="h-3.5 w-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={historySearch}
                   onChange={(e) => setHistorySearch(e.target.value)}
                   placeholder="ค้นหารหัสกะ, ผู้ดูแลกะ, วันที่เปิด/ปิด, หมายเหตุ..."
-                  className="w-full rounded-xl border border-slate-300 bg-white pl-8 pr-8 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-300 bg-white pl-8 pr-8 py-1.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
                 />
                 {historySearch && (
                   <button
                     type="button"
                     onClick={() => setHistorySearch('')}
                     aria-label="ล้างคำค้นหา"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -4699,7 +4699,7 @@ export default function ShiftsPage() {
                   <span className="text-xs font-medium text-slate-500 block">
                     ทำยอดทะลุเป้าหมาย
                   </span>
-                  <span className="text-[10px] text-slate-400 tabular-nums">
+                  <span className="text-[11px] text-slate-500 tabular-nums">
                     เป้า {formatBaht(shiftSalesTarget)} / กะ
                   </span>
                 </div>
@@ -4896,7 +4896,7 @@ export default function ShiftsPage() {
                         <td className="px-4 py-3 text-xs text-slate-600">
                           <div>เปิด: {formatDateTime(sh.opened_at)}</div>
                           {isOpen ? (
-                            <span className="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 mt-0.5">
+                            <span className="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700 mt-0.5">
                               กำลังเปิดอยู่
                             </span>
                           ) : (
@@ -4915,7 +4915,7 @@ export default function ShiftsPage() {
                               <span>{shiftCashierNames[sh.id]}</span>
                             </span>
                           ) : (
-                            <span className="text-slate-400">-</span>
+                            <span className="text-slate-500">-</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-xs">
@@ -4936,7 +4936,7 @@ export default function ShiftsPage() {
                           </div>
                           {vsAvgPct !== null && (
                             <div
-                              className={`text-[10px] font-semibold whitespace-nowrap ${
+                              className={`text-[11px] font-semibold whitespace-nowrap ${
                                 vsAvgPct >= 0 ? 'text-emerald-600' : 'text-amber-600'
                               }`}
                             >
@@ -4951,7 +4951,7 @@ export default function ShiftsPage() {
                             return (
                               <div className="mt-0.5">
                                 <span
-                                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap ${
+                                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-bold whitespace-nowrap ${
                                     ach.reached
                                       ? 'bg-emerald-100 text-emerald-800'
                                       : 'bg-slate-100 text-slate-600'
@@ -4999,7 +4999,7 @@ export default function ShiftsPage() {
                                 if (!grade) return null;
                                 return (
                                   <span
-                                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ${grade.badgeClass}`}
+                                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ${grade.badgeClass}`}
                                   >
                                     {grade.label}
                                   </span>
@@ -5008,7 +5008,7 @@ export default function ShiftsPage() {
                               {diff !== 0 && shiftVarianceReasons[sh.id] && (
                                 <span
                                   title={shiftVarianceReasons[sh.id]}
-                                  className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 max-w-[180px] truncate"
+                                  className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 max-w-[180px] truncate"
                                 >
                                   สาเหตุ: {shiftVarianceReasons[sh.id]}
                                 </span>
@@ -5023,12 +5023,12 @@ export default function ShiftsPage() {
                                 <div className="text-xs font-bold text-indigo-700 whitespace-nowrap">
                                   เข้าเซฟแล้ว {formatBaht(safeDropAmt)}
                                 </div>
-                                <div className="text-[10px] text-slate-400 whitespace-nowrap">
+                                <div className="text-[11px] text-slate-500 whitespace-nowrap">
                                   ระหว่างกะ (ยังไม่ปิด)
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-slate-400">-</span>
+                              <span className="text-slate-500">-</span>
                             )
                           ) : (
                             <div>
@@ -5036,11 +5036,11 @@ export default function ShiftsPage() {
                                 {formatBaht(totalShiftHandoverAmt)}
                               </div>
                               {safeDropAmt > 0 && (
-                                <div className="text-[10px] text-indigo-600 font-medium whitespace-nowrap">
+                                <div className="text-[11px] text-indigo-600 font-medium whitespace-nowrap">
                                   ปิดกะ {formatBaht(netCashDropAmt)} + เซฟ {formatBaht(safeDropAmt)}
                                 </div>
                               )}
-                              <div className="text-[10px] text-slate-400 whitespace-nowrap">
+                              <div className="text-[11px] text-slate-500 whitespace-nowrap">
                                 กันทอน {formatBaht(nextShiftFloatAmt)}
                               </div>
                             </div>
@@ -5590,7 +5590,7 @@ export default function ShiftsPage() {
                   <span
                     className={`font-bold text-sm tabular-nums ${
                       selectedShift.diff_cash === null
-                        ? 'text-slate-400'
+                        ? 'text-slate-500'
                         : Number(selectedShift.diff_cash) === 0
                           ? 'text-emerald-700'
                           : Number(selectedShift.diff_cash) > 0
@@ -5616,7 +5616,7 @@ export default function ShiftsPage() {
                     if (!grade) return null;
                     return (
                       <span
-                        className={`mt-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${grade.badgeClass}`}
+                        className={`mt-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold ${grade.badgeClass}`}
                       >
                         {grade.label}
                       </span>
@@ -5639,7 +5639,7 @@ export default function ShiftsPage() {
                         );
                         return (
                           <span
-                            className={`mt-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                            className={`mt-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-bold ${
                               ach.reached
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : 'bg-slate-100 text-slate-600'
@@ -5842,7 +5842,7 @@ export default function ShiftsPage() {
                         <span className="font-bold text-slate-800">
                           สมการกระทบยอดเงินสดในลิ้นชัก
                         </span>
-                        <span className="text-[11px] text-slate-400">
+                        <span className="text-[11px] text-slate-500">
                           ตั้งต้น + ขายสด + รับหนี้สด - รายจ่ายสุทธิ
                         </span>
                       </div>
@@ -5907,7 +5907,7 @@ export default function ShiftsPage() {
                         <span
                           className={
                             selectedShift.diff_cash === null
-                              ? 'text-slate-400'
+                              ? 'text-slate-500'
                               : Number(selectedShift.diff_cash) === 0
                                 ? 'text-emerald-700'
                                 : Number(selectedShift.diff_cash) > 0
@@ -5976,7 +5976,7 @@ export default function ShiftsPage() {
                         สาเหตุเงินสดขาด/เกิน
                       </span>
                       {shiftVarianceReasons[selectedShift.id] && (
-                        <span className="inline-flex items-center rounded-full bg-white border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                        <span className="inline-flex items-center rounded-full bg-white border border-amber-300 px-2 py-0.5 text-[11px] font-bold text-amber-800">
                           บันทึกแล้ว: {shiftVarianceReasons[selectedShift.id]}
                         </span>
                       )}
@@ -6040,7 +6040,7 @@ export default function ShiftsPage() {
                     รายการบิลขายในกะ ({shiftSalesDetail.length} บิล)
                   </h3>
                   {shiftSalesDetail.length === 0 ? (
-                    <div className="rounded-xl border border-slate-200 p-6 text-center text-xs text-slate-400">
+                    <div className="rounded-xl border border-slate-200 p-6 text-center text-xs text-slate-500">
                       ไม่มีรายการบิลขายในกะนี้
                     </div>
                   ) : (
@@ -6133,7 +6133,7 @@ export default function ShiftsPage() {
                         onChange={(e) => setDetailExpenseSearch(e.target.value)}
                         placeholder="ค้นหาหมายเหตุ..."
                         aria-label="ค้นหาหมายเหตุรายการรับจ่ายในรายละเอียดกะ"
-                        className="w-full sm:w-48 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none"
+                        className="w-full sm:w-48 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-800 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
                       />
                     </div>
                     {(() => {
@@ -6144,7 +6144,7 @@ export default function ShiftsPage() {
                       );
                       if (filteredDetailExpenses.length === 0) {
                         return (
-                          <p className="text-xs text-slate-400 py-3 text-center rounded-xl border border-slate-200 bg-white">
+                          <p className="text-xs text-slate-500 py-3 text-center rounded-xl border border-slate-200 bg-white">
                             ไม่พบรายการที่ตรงกับตัวกรอง
                           </p>
                         );
@@ -6161,7 +6161,7 @@ export default function ShiftsPage() {
                                 {exp.note && (
                                   <span className="text-slate-500 ml-1.5">· {exp.note}</span>
                                 )}
-                                <span className="block text-[11px] text-slate-400">
+                                <span className="block text-[11px] text-slate-500">
                                   {formatDateTime(exp.created_at)}
                                 </span>
                               </div>
@@ -6271,7 +6271,7 @@ export default function ShiftsPage() {
                         >
                           {denom.toLocaleString()} ฿
                         </span>
-                        <span className="text-slate-400">
+                        <span className="text-slate-500">
                           {isBanknote ? 'ใบ' : 'เหรียญ'}
                         </span>
                       </div>
@@ -6285,7 +6285,7 @@ export default function ShiftsPage() {
                         onChange={(e) => handleDenomChange(denom, e.target.value)}
                         className="w-full rounded-md border border-slate-300 px-2 py-1 text-right text-sm font-bold tabular-nums focus:border-emerald-500 focus:outline-none"
                       />
-                      <div className="text-[10px] text-right text-slate-500 tabular-nums">
+                      <div className="text-[11px] text-right text-slate-500 tabular-nums">
                         = {(denom * qty).toLocaleString()} ฿
                       </div>
                     </div>
@@ -6395,7 +6395,7 @@ export default function ShiftsPage() {
                       เช็กลิสต์ตรวจสอบก่อนปิดกะ / ปิดร้าน
                     </span>
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums ${
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
                         allChecked
                           ? 'bg-emerald-100 text-emerald-800'
                           : 'bg-slate-200 text-slate-700'
@@ -6567,7 +6567,7 @@ export default function ShiftsPage() {
               onChange={(e) => setEditOpeningCash(e.target.value)}
               className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-lg font-bold tabular-nums"
             />
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[11px] text-slate-500 mt-1">
               ระบบจะคำนวณเงินสดที่ควรมีในลิ้นชักของกะปัจจุบันใหม่อัตโนมัติ
             </p>
           </div>

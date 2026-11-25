@@ -564,7 +564,7 @@ function ContactNoteField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="เช่น ซอย 3 บ้านรั้วเขียว, LINE: @somchai"
-        className="w-full rounded-xl border border-teal-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
+        className="w-full rounded-xl border border-teal-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
       />
     </div>
   );
@@ -606,7 +606,7 @@ function PaydayCycleField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="เช่น ทุกสิ้นเดือน, วันที่ 1 และ 16"
-        className="w-full rounded-xl border border-sky-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
+        className="w-full rounded-xl border border-sky-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
       />
       <div className="flex flex-wrap gap-1">
         {PAYDAY_CYCLE_PRESETS.map((preset) => {
@@ -667,7 +667,7 @@ function CustomerTagField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="เช่น 🍳 ร้านอาหาร/แม่ค้า, 🏡 เพื่อนบ้านประจำ"
-        className="w-full rounded-xl border border-fuchsia-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
+        className="w-full rounded-xl border border-fuchsia-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
       />
       <div className="flex flex-wrap gap-1">
         {CUSTOMER_TAG_PRESETS.map((preset) => {
@@ -3998,7 +3998,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
         {/* Search, Filter & Sort */}
         <div className="flex flex-wrap items-center gap-3 bg-white p-3.5 rounded-2xl border border-slate-200">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
             <input
               type="search"
               value={search}
@@ -4419,7 +4419,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                         🏆 {formatNumber(points)} แต้ม
                       </span>
                       {points >= 10 && (
-                        <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700 tabular-nums">
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-bold text-emerald-700 tabular-nums">
                           แลกส่วนลดได้ {formatBaht(Math.floor(points / 10))}
                         </span>
                       )}
@@ -4474,7 +4474,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                         </span>
                       </div>
                     )}
-                    {c.note && <p className="text-xs text-slate-400 mt-0.5">{c.note}</p>}
+                    {c.note && <p className="text-xs text-slate-500 mt-0.5">{c.note}</p>}
                     {hasCreditLimit && (
                       <p
                         className={`text-[11px] mt-0.5 font-medium ${
@@ -4572,7 +4572,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                           {dueInfo.formattedDate}
                         </span>
                       ) : (
-                        <span className="text-slate-400 font-normal">ยังไม่ระบุ</span>
+                        <span className="text-slate-500 font-normal">ยังไม่ระบุ</span>
                       )}
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -4655,7 +4655,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                         <span>+ จดติดตาม</span>
                         {(followupLogs[c.id]?.length ?? 0) > 0 && (
                           <span
-                            className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold tabular-nums ${
+                            className={`rounded-full px-1.5 py-0.2 text-[11px] font-bold tabular-nums ${
                               quickFollowupCustomerId === c.id
                                 ? 'bg-indigo-500 text-white'
                                 : 'bg-indigo-100 text-indigo-800'
@@ -5900,7 +5900,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                     >
                       <div className="min-w-0">
                         <p className="font-medium text-slate-800 break-words">{entry.text}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
+                        <p className="text-[11px] text-slate-500 mt-0.5">
                           {formatDateTime(entry.createdAt)}
                         </p>
                       </div>
@@ -5908,7 +5908,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                         type="button"
                         onClick={() => handleDeleteFollowupLog(historyCustomer.id, entry.id)}
                         title="ลบบันทึกนี้"
-                        className="shrink-0 rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                        className="shrink-0 rounded p-1 text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -5964,7 +5964,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                     >
                       <div className="flex items-center justify-between font-semibold">
                         <div className="flex items-center gap-2">
-                          <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                          <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">
                             เงินเชื่อ
                           </span>
                           <span className="text-slate-600 text-xs">
@@ -5986,7 +5986,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                         ))}
                       </div>
                       {s.note && (
-                        <p className="text-[11px] text-slate-400 pt-0.5">หมายเหตุ: {s.note}</p>
+                        <p className="text-[11px] text-slate-500 pt-0.5">หมายเหตุ: {s.note}</p>
                       )}
                     </div>
                   ))
@@ -6007,7 +6007,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                            className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-bold ${
                               p.payment_method === 'qr'
                                 ? 'bg-sky-50 text-sky-700'
                                 : 'bg-emerald-50 text-emerald-700'
@@ -6026,7 +6026,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                           <span className="text-sm font-extrabold text-emerald-600 tabular-nums">
                             +{formatBaht(p.amount)}
                           </span>
-                          <span className="block text-[10px] text-slate-400">ชำระคืน</span>
+                          <span className="block text-[11px] text-slate-500">ชำระคืน</span>
                         </div>
                         <button
                           type="button"
@@ -6175,7 +6175,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                         {p.customers?.name ?? 'ไม่ระบุลูกค้า'}
                       </span>
                       <span
-                        className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                        className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-bold ${
                           p.payment_method === 'qr'
                             ? 'bg-sky-50 text-sky-700'
                             : 'bg-emerald-50 text-emerald-700'
@@ -6185,13 +6185,13 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                       </span>
                     </div>
                     <p className="text-xs text-slate-500">{formatDateTime(p.created_at)}</p>
-                    {p.note && <p className="text-xs text-slate-400 truncate">{p.note}</p>}
+                    {p.note && <p className="text-xs text-slate-500 truncate">{p.note}</p>}
                   </div>
                   <div className="text-right shrink-0">
                     <span className="text-sm font-extrabold text-emerald-600 tabular-nums">
                       +{formatBaht(p.amount)}
                     </span>
-                    <span className="block text-[10px] text-slate-400">ชำระคืน</span>
+                    <span className="block text-[11px] text-slate-500">ชำระคืน</span>
                   </div>
                 </div>
               ))}
@@ -6590,7 +6590,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                   ? 'โหมดล้างวงเงิน (จะลบวงเงินเชื่อของกลุ่มที่เลือก)'
                   : 'ระบุวงเงินเชื่อ เช่น 1500'
               }
-              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none"
             />
           </div>
 
@@ -6759,7 +6759,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                   ? 'โหมดล้างป้ายกลุ่ม (จะลบป้ายกลุ่มของลูกค้าที่เลือก)'
                   : 'เช่น 🍳 ร้านอาหาร/แม่ค้า, 🏡 เพื่อนบ้านประจำ'
               }
-              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none"
             />
           </div>
 
@@ -6848,7 +6848,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
             {/* Customer Info & Balances */}
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-slate-300 p-3 mb-3">
               <div>
-                <span className="block text-[10px] text-slate-500">ชื่อลูกค้า</span>
+                <span className="block text-[11px] text-slate-500">ชื่อลูกค้า</span>
                 <span className="text-sm font-bold text-slate-900">
                   {historyCustomer.name}
                 </span>
@@ -6864,20 +6864,20 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                 )}
               </div>
               <div className="text-right">
-                <span className="block text-[10px] text-slate-500">ยอดค้างชำระปัจจุบัน</span>
+                <span className="block text-[11px] text-slate-500">ยอดค้างชำระปัจจุบัน</span>
                 <span className="text-lg font-extrabold tabular-nums text-slate-900">
                   {formatBaht(statementDebt)}
                 </span>
               </div>
 
               <div>
-                <span className="block text-[10px] text-slate-500">เบอร์โทร</span>
+                <span className="block text-[11px] text-slate-500">เบอร์โทร</span>
                 <span className="font-semibold text-slate-800 tabular-nums">
                   {historyCustomer.phone?.trim() || '-'}
                 </span>
               </div>
               <div className="text-right">
-                <span className="block text-[10px] text-slate-500">วงเงินเชื่อ</span>
+                <span className="block text-[11px] text-slate-500">วงเงินเชื่อ</span>
                 <span className="font-semibold text-slate-800 tabular-nums">
                   {hasStatementLimit ? formatBaht(statementCreditLimit) : 'ไม่จำกัดวงเงิน'}
                   {isOverStatementLimit && (
@@ -6930,7 +6930,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
             {/* Compact Activity Summary */}
             <div className="grid grid-cols-2 gap-2 mb-3 text-center">
               <div className="rounded border border-slate-300 px-2.5 py-1.5">
-                <span className="block text-[10px] text-slate-500">
+                <span className="block text-[11px] text-slate-500">
                   ซื้อเชื่อล่าสุด ({customerSales.length} บิล)
                 </span>
                 <span className="text-xs font-bold tabular-nums text-slate-900">
@@ -6938,7 +6938,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                 </span>
               </div>
               <div className="rounded border border-slate-300 px-2.5 py-1.5">
-                <span className="block text-[10px] text-slate-500">
+                <span className="block text-[11px] text-slate-500">
                   ชำระหนี้ล่าสุด ({customerPayments.length} ครั้ง)
                 </span>
                 <span className="text-xs font-bold tabular-nums text-slate-900">
@@ -7226,7 +7226,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                       <td className="py-1.5 px-2">
                         <div className="font-bold text-slate-900">{c.name}</div>
                         {c.note && (
-                          <div className="text-[10px] text-slate-500">{c.note}</div>
+                          <div className="text-[11px] text-slate-500">{c.note}</div>
                         )}
                       </td>
                       <td className="py-1.5 px-2 tabular-nums whitespace-nowrap">
@@ -7246,42 +7246,42 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                           <div>
                             <span className="font-semibold">{dueInfo.formattedDate}</span>
                             {dueInfo.status === 'overdue' && (
-                              <div className="text-[10px] font-bold text-red-700">
+                              <div className="text-[11px] font-bold text-red-700">
                                 เลยกำหนด {Math.abs(dueInfo.daysDiff)} วัน
                               </div>
                             )}
                             {dueInfo.status === 'due_today' && (
-                              <div className="text-[10px] font-bold text-orange-700">
+                              <div className="text-[11px] font-bold text-orange-700">
                                 ครบกำหนดวันนี้
                               </div>
                             )}
                           </div>
                         ) : (
-                          <span className="text-slate-400">-</span>
+                          <span className="text-slate-500">-</span>
                         )}
                       </td>
                       <td className="py-1.5 px-2">
                         {lastPayment ? (
                           <div>
                             <div className="tabular-nums">{formatDateTime(lastPayment.paidAt)}</div>
-                            <div className="text-[10px] text-slate-600 tabular-nums">
+                            <div className="text-[11px] text-slate-600 tabular-nums">
                               {formatBaht(lastPayment.amount)}
                             </div>
                           </div>
                         ) : (
-                          <span className="text-slate-400">ยังไม่เคยชำระ</span>
+                          <span className="text-slate-500">ยังไม่เคยชำระ</span>
                         )}
                       </td>
                       <td className="py-1.5 px-2">
                         {latestFollowup ? (
                           <div>
                             <div className="text-slate-800">{latestFollowup.text}</div>
-                            <div className="text-[10px] text-slate-500 tabular-nums">
+                            <div className="text-[11px] text-slate-500 tabular-nums">
                               {formatDateTime(latestFollowup.createdAt)}
                             </div>
                           </div>
                         ) : (
-                          <span className="text-slate-400">-</span>
+                          <span className="text-slate-500">-</span>
                         )}
                       </td>
                       <td className="py-1.5 px-2">
@@ -7289,7 +7289,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                           {creditHealth?.label ?? 'ปกติ'}
                         </div>
                         {creditHealth?.detail && (
-                          <div className="text-[10px] text-slate-500">
+                          <div className="text-[11px] text-slate-500">
                             {creditHealth.detail}
                           </div>
                         )}

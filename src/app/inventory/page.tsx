@@ -4539,7 +4539,7 @@ export default function InventoryPage() {
         {/* Filter & Search */}
         <div className="flex flex-wrap items-center gap-3 bg-white p-3.5 rounded-2xl border border-slate-200">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
             <input
               type="search"
               value={search}
@@ -4566,7 +4566,7 @@ export default function InventoryPage() {
             </select>
 
             <div className="relative inline-flex items-center">
-              <Truck className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Truck className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-slate-500" />
               <select
                 value={selectedSupplier}
                 onChange={(e) => setSelectedSupplier(e.target.value)}
@@ -4584,7 +4584,7 @@ export default function InventoryPage() {
             </div>
 
             <div className="relative inline-flex items-center">
-              <MapPin className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-slate-400" />
+              <MapPin className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-slate-500" />
               <select
                 value={selectedShelfLocation}
                 onChange={(e) => setSelectedShelfLocation(e.target.value)}
@@ -4619,7 +4619,7 @@ export default function InventoryPage() {
             )}
 
             <div className="relative inline-flex items-center">
-              <ArrowUpDown className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-slate-400" />
+              <ArrowUpDown className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-slate-500" />
               <select
                 value={sortBy}
                 onChange={(e) =>
@@ -4905,7 +4905,7 @@ export default function InventoryPage() {
                                     onClick={() => handleCopyBarcode(p.id, p.barcode!)}
                                     title="คัดลอกบาร์โค้ด"
                                     aria-label={`คัดลอกบาร์โค้ด ${p.barcode}`}
-                                    className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-sans font-semibold transition ${
+                                    className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[11px] font-sans font-semibold transition ${
                                       copiedBarcodeId === p.id
                                         ? 'bg-emerald-100 text-emerald-700'
                                         : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800'
@@ -4926,13 +4926,13 @@ export default function InventoryPage() {
                                 </span>
                               )}
                               {p.is_quick_item && !isInactive && (
-                                <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700">
                                   ★ ปุ่มด่วน
                                 </span>
                               )}
                               {suppliers[p.id] && (
                                 <span
-                                  className="inline-flex items-center gap-1 rounded bg-sky-50 border border-sky-200 px-1.5 py-0.5 text-[10px] font-semibold text-sky-800"
+                                  className="inline-flex items-center gap-1 rounded bg-sky-50 border border-sky-200 px-1.5 py-0.5 text-[11px] font-semibold text-sky-800"
                                   title={`ร้านค้าส่ง / ซัพพลายเออร์: ${suppliers[p.id]}`}
                                 >
                                   <Truck className="h-3 w-3 shrink-0" />
@@ -4941,7 +4941,7 @@ export default function InventoryPage() {
                               )}
                               {orderPackInfos[p.id] && (
                                 <span
-                                  className="inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"
+                                  className="inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800"
                                   title={`ขนาดแพ็ค / เงื่อนไขสั่งซื้อ: ${orderPackInfos[p.id]}`}
                                 >
                                   <Boxes className="h-3 w-3 shrink-0" />
@@ -4950,7 +4950,7 @@ export default function InventoryPage() {
                               )}
                               {shelfLocations[p.id] && (
                                 <span
-                                  className="inline-flex items-center gap-1 rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-800"
+                                  className="inline-flex items-center gap-1 rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[11px] font-semibold text-indigo-800"
                                   title={`ตำแหน่งชั้นวาง / โซนจัดเก็บ: ${shelfLocations[p.id]}`}
                                 >
                                   <MapPin className="h-3 w-3 shrink-0" />
@@ -4959,7 +4959,7 @@ export default function InventoryPage() {
                               )}
                               {wholesaleTier && (
                                 <span
-                                  className="inline-flex flex-wrap items-center gap-1 rounded bg-violet-50 border border-violet-200 px-1.5 py-0.5 text-[10px] font-semibold text-violet-800 tabular-nums"
+                                  className="inline-flex flex-wrap items-center gap-1 rounded bg-violet-50 border border-violet-200 px-1.5 py-0.5 text-[11px] font-semibold text-violet-800 tabular-nums"
                                   title={`โปรราคาส่งเมื่อซื้อครบ ${formatNumber(wholesaleTier.minQty)} ชิ้นขึ้นไป: ฿${wholesaleTier.unitPrice % 1 === 0 ? formatNumber(wholesaleTier.unitPrice) : wholesaleTier.unitPrice.toFixed(2)}/ชิ้น`}
                                 >
                                   <Tag className="h-3 w-3 shrink-0" />
@@ -4973,7 +4973,7 @@ export default function InventoryPage() {
                                     wholesaleMarginInfo.cost > 0 &&
                                     wholesaleMarginInfo.marginPct !== null && (
                                       <span
-                                        className={`rounded px-1 py-0.5 text-[10px] font-bold ${
+                                        className={`rounded px-1 py-0.5 text-[11px] font-bold ${
                                           wholesaleMarginInfo.isLossOrBreakEven
                                             ? 'bg-rose-100 text-rose-700'
                                             : wholesaleMarginInfo.isLowMargin
@@ -4991,20 +4991,20 @@ export default function InventoryPage() {
                               {wholesaleMarginInfo &&
                                 !isInactive &&
                                 wholesaleMarginInfo.isLossOrBreakEven && (
-                                  <span className="inline-flex items-center gap-1 rounded bg-rose-100 border border-rose-200 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
+                                  <span className="inline-flex items-center gap-1 rounded bg-rose-100 border border-rose-200 px-1.5 py-0.5 text-[11px] font-bold text-rose-700">
                                     ⚠️ ราคาส่งขาดทุน
                                   </span>
                                 )}
                               {wholesaleMarginInfo &&
                                 !isInactive &&
                                 wholesaleMarginInfo.isLowMargin && (
-                                  <span className="inline-flex items-center gap-1 rounded bg-orange-100 border border-orange-200 px-1.5 py-0.5 text-[10px] font-bold text-orange-800">
+                                  <span className="inline-flex items-center gap-1 rounded bg-orange-100 border border-orange-200 px-1.5 py-0.5 text-[11px] font-bold text-orange-800">
                                     ⚠️ กำไรส่งต่ำ
                                   </span>
                                 )}
                               {promoLabels[p.id] && (
                                 <span
-                                  className="inline-flex items-center gap-1 rounded bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[10px] font-bold text-rose-700"
+                                  className="inline-flex items-center gap-1 rounded bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[11px] font-bold text-rose-700"
                                   title={`ป้ายโปรโมชั่น / ป้ายเชียร์ขาย: ${promoLabels[p.id]}`}
                                 >
                                   <Tag className="h-3 w-3 shrink-0" />
@@ -5013,7 +5013,7 @@ export default function InventoryPage() {
                               )}
                               {substituteNotes[p.id] && (
                                 <span
-                                  className="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[10px] font-semibold text-teal-800"
+                                  className="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[11px] font-semibold text-teal-800"
                                   title={`สินค้าทดแทน / คำแนะนำเมื่อของหมด: ${substituteNotes[p.id]}`}
                                 >
                                   <RotateCcw className="h-3 w-3 shrink-0" />
@@ -5022,7 +5022,7 @@ export default function InventoryPage() {
                               )}
                               {isLowMargin && !isInactive && (
                                 <span
-                                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold ${
                                     isLoss
                                       ? 'bg-rose-100 text-rose-700 border border-rose-200'
                                       : 'bg-amber-100 text-amber-800 border border-amber-200'
@@ -5034,7 +5034,7 @@ export default function InventoryPage() {
                               )}
                               {expiryInfo && !isInactive && (
                                 <span
-                                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold ${
                                     expiryInfo.status === 'expired'
                                       ? 'bg-red-100 text-red-700 border border-red-200'
                                       : expiryInfo.status === 'expiring_soon'
@@ -5060,14 +5060,14 @@ export default function InventoryPage() {
                                   type="button"
                                   onClick={() => openWriteOffModal(p, 'สินค้าหมดอายุ')}
                                   title="ตัดจำหน่ายสินค้าหมดอายุออกจากสต็อก"
-                                  className="inline-flex items-center gap-1 rounded border border-rose-300 bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 hover:bg-rose-100"
+                                  className="inline-flex items-center gap-1 rounded border border-rose-300 bg-rose-50 px-1.5 py-0.5 text-[11px] font-bold text-rose-700 hover:bg-rose-100"
                                 >
                                   <PackageMinus className="h-3 w-3 shrink-0" />
                                   <span>ตัดจำหน่าย</span>
                                 </button>
                               )}
                               {isInactive && (
-                                <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">
+                                <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[11px] font-semibold text-rose-700">
                                   ซ่อนไว้ / ยกเลิกขาย
                                 </span>
                               )}
@@ -5100,7 +5100,7 @@ export default function InventoryPage() {
                                       </span>
                                       {unitBarcode && (
                                         <span
-                                          className="rounded bg-white border border-slate-300 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600"
+                                          className="rounded bg-white border border-slate-300 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-slate-600"
                                           title={`บาร์โค้ดหน่วย ${u.unit_name}: ${unitBarcode}`}
                                         >
                                           #{unitBarcode}
@@ -5752,7 +5752,7 @@ export default function InventoryPage() {
               </label>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative flex-1 min-w-[200px]">
-                  <Truck className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Truck className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                   <input
                     id="product-supplier-name"
                     type="text"
@@ -5808,7 +5808,7 @@ export default function InventoryPage() {
               </label>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative flex-1 min-w-[200px]">
-                  <Boxes className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Boxes className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                   <input
                     id="product-order-pack-info"
                     type="text"
@@ -5887,7 +5887,7 @@ export default function InventoryPage() {
               </label>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative flex-1 min-w-[200px]">
-                  <MapPin className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                   <input
                     id="product-shelf-location"
                     type="text"
@@ -5966,7 +5966,7 @@ export default function InventoryPage() {
               </label>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative flex-1 min-w-[200px]">
-                  <RotateCcw className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <RotateCcw className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                   <input
                     id="product-substitute-note"
                     type="text"
@@ -6310,7 +6310,7 @@ export default function InventoryPage() {
                                 }
                                 className={`rounded-md border px-2 py-0.5 text-[11px] font-semibold tabular-nums transition ${
                                   !hasPositiveCost
-                                    ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                                    ? 'border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed'
                                     : isSelected
                                       ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
                                       : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/70 hover:text-emerald-700'
@@ -6346,7 +6346,7 @@ export default function InventoryPage() {
                             {formatBaht(profit)}
                           </span>
                           <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] ${
+                            className={`rounded px-1.5 py-0.5 text-[11px] ${
                               isLoss
                                 ? 'bg-rose-50 text-rose-700'
                                 : isZero
@@ -6862,7 +6862,7 @@ export default function InventoryPage() {
                 <h4 className="text-xs font-bold text-slate-700">
                   ประวัติความเคลื่อนไหวสต็อก (15 รายการล่าสุด)
                 </h4>
-                <span className="text-[11px] text-slate-400">หน่วย: {adjustProduct.base_unit}</span>
+                <span className="text-[11px] text-slate-500">หน่วย: {adjustProduct.base_unit}</span>
               </div>
 
               {movementsLoading ? (
@@ -6890,7 +6890,7 @@ export default function InventoryPage() {
                         <div className="space-y-0.5 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span
-                              className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold ${typeBadge.cls}`}
+                              className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-bold ${typeBadge.cls}`}
                             >
                               {typeBadge.label}
                             </span>
@@ -7298,7 +7298,7 @@ export default function InventoryPage() {
               value={batchNote}
               onChange={(e) => setBatchNote(e.target.value)}
               placeholder="เช่น บิลแม็คโคร ล็อต พ.ย. 69, เลขที่ใบส่งของ..."
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
             />
             {savedSupplierOptions.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
@@ -7332,7 +7332,7 @@ export default function InventoryPage() {
           {/* Search, Filter Tabs & Quick Fill */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
               <input
                 type="search"
                 value={batchSearch}
@@ -7564,7 +7564,7 @@ export default function InventoryPage() {
                               {p.name}
                             </span>
                             {row.isLowStock && (
-                              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">
                                 ใกล้หมด
                               </span>
                             )}
@@ -7693,7 +7693,7 @@ export default function InventoryPage() {
                               {formatBaht(row.lineTotalCost)}
                             </span>
                           ) : (
-                            <span className="text-xs text-slate-400">-</span>
+                            <span className="text-xs text-slate-500">-</span>
                           )}
                         </td>
                       </tr>
@@ -7813,7 +7813,7 @@ export default function InventoryPage() {
                     <div className="space-y-0.5 min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span
-                          className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold ${typeBadge.cls}`}
+                          className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-bold ${typeBadge.cls}`}
                         >
                           {typeBadge.label}
                         </span>
@@ -7937,7 +7937,7 @@ export default function InventoryPage() {
                       );
                     return (
                       <tr key={row.rowNumber} className={row.error ? 'bg-rose-50/50' : ''}>
-                        <td className="px-2.5 py-2 text-slate-400 tabular-nums">{row.rowNumber}</td>
+                        <td className="px-2.5 py-2 text-slate-500 tabular-nums">{row.rowNumber}</td>
                         <td className="px-2.5 py-2 font-semibold text-slate-900">
                           {row.name || <span className="text-rose-500">-</span>}
                         </td>
@@ -7946,13 +7946,13 @@ export default function InventoryPage() {
                             <span className="inline-flex items-center gap-1">
                               <span>{row.categoryName}</span>
                               {!isExistingCat && (
-                                <span className="rounded bg-sky-50 px-1 py-0.5 text-[10px] font-bold text-sky-700">
+                                <span className="rounded bg-sky-50 px-1 py-0.5 text-[11px] font-bold text-sky-700">
                                   ใหม่
                                 </span>
                               )}
                             </span>
                           ) : (
-                            <span className="text-slate-400">-</span>
+                            <span className="text-slate-500">-</span>
                           )}
                         </td>
                         <td className="px-2.5 py-2 text-slate-700">{row.baseUnit}</td>
@@ -8062,7 +8062,7 @@ export default function InventoryPage() {
             {/* Left: Product selection list */}
             <div className="flex flex-col gap-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <input
                   type="text"
                   value={tagSearch}
@@ -8073,7 +8073,7 @@ export default function InventoryPage() {
               </div>
               <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
                 {tagModalProducts.length === 0 ? (
-                  <p className="p-6 text-center text-sm text-slate-400">
+                  <p className="p-6 text-center text-sm text-slate-500">
                     ไม่พบสินค้าที่ตรงกับเงื่อนไข
                   </p>
                 ) : (
@@ -8115,7 +8115,7 @@ export default function InventoryPage() {
               </p>
               <div className="max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
                 {selectedTagProducts.length === 0 ? (
-                  <div className="py-12 text-center text-sm text-slate-400">
+                  <div className="py-12 text-center text-sm text-slate-500">
                     กรุณาเลือกสินค้าทางด้านซ้าย เพื่อดูตัวอย่างป้ายราคา
                   </div>
                 ) : (
@@ -8133,14 +8133,14 @@ export default function InventoryPage() {
                         >
                           <div>
                             {promoText && (
-                              <span className="inline-block mb-1 rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-extrabold text-white leading-none">
+                              <span className="inline-block mb-1 rounded bg-rose-600 px-1.5 py-0.5 text-[11px] font-extrabold text-white leading-none">
                                 {promoText}
                               </span>
                             )}
                             <p className="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
                               {p.name}
                             </p>
-                            <p className="text-[10px] font-mono text-slate-500 truncate mt-0.5">
+                            <p className="text-[11px] font-mono text-slate-500 truncate mt-0.5">
                               {p.barcode ? `บาร์โค้ด: ${p.barcode}` : `รหัส: ${p.id.slice(0, 8)}`}
                             </p>
                           </div>
@@ -8155,7 +8155,7 @@ export default function InventoryPage() {
                             </div>
                             {showPackWholesaleOnTags &&
                               (extraUnits.length > 0 || wholesaleTier) && (
-                                <div className="mt-1 pt-1 border-t border-dashed border-slate-200 space-y-0.5 text-[10px] leading-tight">
+                                <div className="mt-1 pt-1 border-t border-dashed border-slate-200 space-y-0.5 text-[11px] leading-tight">
                                   {extraUnits.length > 0 && (
                                     <p className="text-slate-700 font-medium truncate">
                                       {extraUnits
@@ -8177,7 +8177,7 @@ export default function InventoryPage() {
                                 </div>
                               )}
                             {showShelfAndTargetOnTag && (shelfText || targetStockQty > 0) && (
-                              <div className="mt-1 pt-1 border-t border-dashed border-slate-200 flex items-center justify-between gap-2 text-[10px] font-medium text-slate-600">
+                              <div className="mt-1 pt-1 border-t border-dashed border-slate-200 flex items-center justify-between gap-2 text-[11px] font-medium text-slate-600">
                                 <span className="truncate">
                                   {shelfText ? `ชั้น: ${shelfText}` : ''}
                                 </span>
@@ -8354,13 +8354,13 @@ export default function InventoryPage() {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
               <input
                 type="text"
                 value={bulkPriceSearch}
                 onChange={(e) => setBulkPriceSearch(e.target.value)}
                 placeholder="ค้นหาชื่อสินค้า หรือบาร์โค้ด..."
-                className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none"
               />
             </div>
             {(costUpProducts.length > 0 || bulkPriceOnlyCostUp) && (
@@ -8668,7 +8668,7 @@ export default function InventoryPage() {
                               className={`w-24 rounded-lg border px-2.5 py-1.5 text-right text-sm font-semibold tabular-nums focus:outline-none ${
                                 targetStockChanged
                                   ? 'border-indigo-400 bg-white text-indigo-800 ring-1 ring-indigo-300'
-                                  : 'border-slate-300 bg-white text-slate-900 placeholder:text-slate-400'
+                                  : 'border-slate-300 bg-white text-slate-900 placeholder:text-slate-500'
                               }`}
                             />
                             <span className="text-[11px] text-slate-500 tabular-nums">
@@ -8694,7 +8694,7 @@ export default function InventoryPage() {
                               className={`w-full rounded-lg border px-2.5 py-1.5 text-xs font-semibold focus:outline-none ${
                                 promoChanged
                                   ? 'border-indigo-400 bg-white text-indigo-800 ring-1 ring-indigo-300'
-                                  : 'border-slate-300 bg-white text-slate-900 placeholder:text-slate-400'
+                                  : 'border-slate-300 bg-white text-slate-900 placeholder:text-slate-500'
                               }`}
                             />
                             {promoChanged && (
@@ -8772,7 +8772,7 @@ export default function InventoryPage() {
               </p>
               {(stockAuditSummary.surplusCount > 0 ||
                 stockAuditSummary.shortageCount > 0) && (
-                <p className="text-[10px] font-medium text-teal-800 mt-0.5 tabular-nums">
+                <p className="text-[11px] font-medium text-teal-800 mt-0.5 tabular-nums">
                   เกิน {stockAuditSummary.surplusCount} · ขาด{' '}
                   {stockAuditSummary.shortageCount}
                 </p>
@@ -8822,13 +8822,13 @@ export default function InventoryPage() {
           {/* Search & Quick Clear */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
               <input
                 type="search"
                 value={stockAuditSearch}
                 onChange={(e) => setStockAuditSearch(e.target.value)}
                 placeholder="ค้นหาชื่อสินค้า บาร์โค้ด หรือตำแหน่งชั้นวาง..."
-                className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-teal-500 focus:outline-none"
               />
             </div>
             {Object.keys(stockAuditInputs).length > 0 && (
@@ -8914,7 +8914,7 @@ export default function InventoryPage() {
                               </>
                             )}
                             {p.is_active === false && (
-                              <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">
+                              <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[11px] font-semibold text-rose-700">
                                 ซ่อนไว้
                               </span>
                             )}
@@ -8959,7 +8959,7 @@ export default function InventoryPage() {
                               ค่าไม่ถูกต้อง
                             </span>
                           ) : row.diff === null ? (
-                            <span className="text-xs text-slate-400">-</span>
+                            <span className="text-xs text-slate-500">-</span>
                           ) : row.diff === 0 ? (
                             <span className="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
                               0 (ตรงระบบ)
@@ -8979,7 +8979,7 @@ export default function InventoryPage() {
                         </td>
                         <td className="px-3 py-2.5 text-right tabular-nums whitespace-nowrap font-bold">
                           {row.isInvalid || row.costDiff === null ? (
-                            <span className="text-xs font-normal text-slate-400">-</span>
+                            <span className="text-xs font-normal text-slate-500">-</span>
                           ) : row.costDiff === 0 ? (
                             <span className="text-xs font-semibold text-slate-500">
                               {formatBaht(0)}
@@ -9375,7 +9375,7 @@ export default function InventoryPage() {
               เลือกสินค้าที่ต้องการตัดจำหน่าย *
             </label>
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
               <input
                 id="writeoff-product-search"
                 type="search"
@@ -9648,20 +9648,20 @@ export default function InventoryPage() {
                   <div>
                     {promoText && (
                       <div className="mb-1">
-                        <span className="inline-block rounded bg-slate-900 px-2 py-0.5 text-[10px] font-extrabold text-white">
+                        <span className="inline-block rounded bg-slate-900 px-2 py-0.5 text-[11px] font-extrabold text-white">
                           {promoText}
                         </span>
                       </div>
                     )}
                     {settings?.store_name && (
-                      <p className="text-[10px] font-medium text-slate-500 truncate">
+                      <p className="text-[11px] font-medium text-slate-500 truncate">
                         {settings.store_name}
                       </p>
                     )}
                     <p className="text-sm font-bold text-slate-900 leading-snug line-clamp-2">
                       {p.name}
                     </p>
-                    <p className="text-[10px] font-mono text-slate-500 truncate mt-0.5">
+                    <p className="text-[11px] font-mono text-slate-500 truncate mt-0.5">
                       {p.barcode ? `บาร์โค้ด: ${p.barcode}` : `รหัส: ${p.id.slice(0, 8)}`}
                     </p>
                   </div>
@@ -9676,7 +9676,7 @@ export default function InventoryPage() {
                     </div>
                     {showPackWholesaleOnTags &&
                       (extraUnits.length > 0 || wholesaleTier) && (
-                        <div className="mt-1.5 pt-1 border-t border-dashed border-slate-300 space-y-0.5 text-[10px] leading-tight">
+                        <div className="mt-1.5 pt-1 border-t border-dashed border-slate-300 space-y-0.5 text-[11px] leading-tight">
                           {extraUnits.length > 0 && (
                             <p className="text-slate-700 font-semibold">
                               {extraUnits
@@ -9697,7 +9697,7 @@ export default function InventoryPage() {
                         </div>
                       )}
                     {showShelfAndTargetOnTag && (shelfText || targetStockQty > 0) && (
-                      <div className="mt-1.5 pt-1 border-t border-dashed border-slate-300 flex items-center justify-between gap-2 text-[10px] font-medium text-slate-700">
+                      <div className="mt-1.5 pt-1 border-t border-dashed border-slate-300 flex items-center justify-between gap-2 text-[11px] font-medium text-slate-700">
                         <span className="truncate">
                           {shelfText ? `ชั้น: ${shelfText}` : ''}
                         </span>
@@ -9920,7 +9920,7 @@ export default function InventoryPage() {
                           <td className="border border-slate-400 px-2 py-2 text-right tabular-nums">
                             {formatBaht(estimatedCost)}
                           </td>
-                          <td className="border border-slate-400 px-2 py-2 text-center text-slate-400">
+                          <td className="border border-slate-400 px-2 py-2 text-center text-slate-500">
                             ☐
                           </td>
                           <td className="border border-slate-400 px-2 py-2">

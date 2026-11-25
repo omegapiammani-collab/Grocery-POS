@@ -67,7 +67,7 @@ export function AppShell({
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-emerald-600' : 'text-slate-400'}`} />
+                <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-emerald-600' : 'text-slate-500'}`} />
                 <span>{item.label}</span>
               </Link>
             );

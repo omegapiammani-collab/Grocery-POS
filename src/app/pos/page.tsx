@@ -50,7 +50,14 @@ import QRCode from 'qrcode';
 import { AppShell } from '@/components/AppShell';
 import { Modal } from '@/components/Modal';
 import { createClient } from '@/lib/supabase/client';
-import { formatBaht, formatDateTime, formatNumber, formatTime } from '@/lib/format';
+import {
+  formatBaht,
+  formatDateTime,
+  formatExpiryDateTh,
+  formatNumber,
+  formatTime,
+  parseIsoDateUtcMs,
+} from '@/lib/format';
 import { seedSampleGroceryData } from '@/lib/seed';
 import type {
   CartItem,
@@ -510,24 +517,6 @@ interface ExpiryInfo {
   status: ExpiryStatus;
 }
 
-function parseIsoDateUtcMs(iso: string): number | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
-  if (!match) return null;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const utcMs = Date.UTC(year, month - 1, day);
-  const probe = new Date(utcMs);
-  if (
-    probe.getUTCFullYear() !== year ||
-    probe.getUTCMonth() !== month - 1 ||
-    probe.getUTCDate() !== day
-  ) {
-    return null;
-  }
-  return utcMs;
-}
-
 /** Parse a JSON Record<string, string> retaining only valid YYYY-MM-DD entries. */
 function parseIsoDateMap(raw: string | null): Record<string, string> {
   if (!raw) return {};
@@ -670,7 +659,7 @@ function renderCustomerDueBadge(
     return null;
   }
   const sizeClass = compact
-    ? 'px-1.5 py-0.5 text-[10px]'
+    ? 'px-1.5 py-0.5 text-[11px]'
     : 'px-2 py-0.5 text-[11px]';
   if (dueInfo.status === 'overdue') {
     return (
@@ -759,7 +748,7 @@ function renderCustomerCreditHealthBadge(
 ) {
   if (!creditHealth) return null;
   const sizeClass = compact
-    ? 'px-1.5 py-0.5 text-[10px]'
+    ? 'px-1.5 py-0.5 text-[11px]'
     : 'px-2 py-0.5 text-[11px]';
   const toneClass =
     creditHealth.level === 'risk'
@@ -776,17 +765,6 @@ function renderCustomerCreditHealthBadge(
       {creditHealth.label}
     </span>
   );
-}
-
-function formatExpiryDateTh(iso: string): string {
-  const utcMs = parseIsoDateUtcMs(iso);
-  if (utcMs === null) return iso;
-  return new Intl.DateTimeFormat('th-TH', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(utcMs));
 }
 
 function getProductExpiryInfo(
@@ -7276,7 +7254,7 @@ export default function PosPage() {
 
       <div className="flex-1 overflow-y-auto divide-y divide-slate-100 px-4">
         {cart.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center text-slate-400">
+          <div className="flex flex-col items-center justify-center py-16 text-center text-slate-500">
             <ShoppingBag className="h-10 w-10 mb-2 opacity-40" />
             <p className="text-sm font-medium">ยังไม่มีสินค้าในตะกร้า</p>
             <p className="text-xs mt-1">แตะที่สินค้าด้านซ้ายเพื่อเพิ่มรายการ</p>
@@ -7414,7 +7392,7 @@ export default function PosPage() {
                           <>
                             {standardUnit &&
                               Number(standardUnit.selling_price) > item.unit_price && (
-                                <span className="text-[11px] text-slate-400 line-through tabular-nums">
+                                <span className="text-[11px] text-slate-500 line-through tabular-nums">
                                   {formatBaht(standardUnit.selling_price)}
                                 </span>
                               )}
@@ -7429,14 +7407,14 @@ export default function PosPage() {
                                     )}`
                                   : `ใช้ราคาส่งอัตโนมัติ (≥${formatNumber(wholesaleTier.minQty)} ชิ้น)`
                               }
-                              className="inline-flex items-center gap-0.5 rounded-md border border-teal-200 bg-teal-50 px-1.5 py-0.5 text-[10px] font-bold text-teal-800 leading-none tabular-nums"
+                              className="inline-flex items-center gap-0.5 rounded-md border border-teal-200 bg-teal-50 px-1.5 py-0.5 text-[11px] font-bold text-teal-800 leading-none tabular-nums"
                             >
                               ราคาส่ง ≥{formatNumber(wholesaleTier.minQty)} ชิ้น
                             </span>
                           </>
                         )}
                         {isPriceOverridden && (
-                          <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 leading-none">
+                          <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-700 leading-none">
                             ปรับราคา
                           </span>
                         )}
@@ -7445,7 +7423,7 @@ export default function PosPage() {
                           standardUnit &&
                           !manualPriceKeys.has(item.key) &&
                           item.qty < wholesaleTier.minQty && (
-                            <span className="text-[10px] font-medium text-teal-700/90 tabular-nums">
+                            <span className="text-[11px] font-medium text-teal-700/90 tabular-nums">
                               อีก {formatNumber(wholesaleTier.minQty - item.qty)}{' '}
                               {item.unit_name} ได้ราคาส่ง ฿
                               {formatNumber(wholesaleTier.unitPrice)}
@@ -7458,7 +7436,7 @@ export default function PosPage() {
                         {promoLabel && (
                           <span
                             title={`ป้ายโปรโมชั่น: ${promoLabel}`}
-                            className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-rose-500 to-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-2xs max-w-full"
+                            className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-rose-500 to-orange-500 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-2xs max-w-full"
                           >
                             <Tag className="h-2.5 w-2.5 shrink-0" />
                             <span className="truncate">{promoLabel}</span>
@@ -7518,7 +7496,7 @@ export default function PosPage() {
                     ))}
                   </select>
                 ) : (
-                  <span className="text-xs text-slate-400">{item.unit_name}</span>
+                  <span className="text-xs text-slate-500">{item.unit_name}</span>
                 )}
 
                 <div className="flex items-center gap-1.5">
@@ -7526,7 +7504,7 @@ export default function PosPage() {
                     type="button"
                     onClick={() => updateCartQty(item.key, -1)}
                     aria-label="ลดจำนวน"
-                    className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                    className="h-9 w-9 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                   >
                     {item.qty <= 1 ? (
                       <Trash2 className="h-3.5 w-3.5 text-rose-500" />
@@ -7573,13 +7551,13 @@ export default function PosPage() {
                         e.currentTarget.blur();
                       }
                     }}
-                    className="h-8 w-14 rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-bold text-slate-900 tabular-nums focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-9 w-14 rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-bold text-slate-900 tabular-nums focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
                     type="button"
                     onClick={() => updateCartQty(item.key, 1)}
                     aria-label="เพิ่มจำนวน"
-                    className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                    className="h-9 w-9 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
@@ -7588,7 +7566,7 @@ export default function PosPage() {
                     onClick={() => updateCartQty(item.key, 5)}
                     aria-label={`เพิ่มจำนวน ${item.product_name} ทีละ 5`}
                     title="เพิ่มทีละ 5"
-                    className="h-8 px-2 flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                    className="h-9 px-2.5 flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors"
                   >
                     +5
                   </button>
@@ -7632,7 +7610,7 @@ export default function PosPage() {
                         }
                       }}
                       placeholder="พิมพ์โน้ตกำกับสินค้านี้..."
-                      className="flex-1 min-w-0 h-7 rounded-lg border border-amber-300 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none"
+                      className="flex-1 min-w-0 h-7 rounded-lg border border-amber-300 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-500 focus:border-amber-500 focus:outline-none"
                     />
                     {itemNote !== '' && (
                       <button
@@ -7681,7 +7659,7 @@ export default function PosPage() {
                         onClick={() => updateCartItemNote(item.key, '')}
                         aria-label={`ลบโน้ต ${item.product_name}`}
                         title="ลบโน้ต"
-                        className="h-5 w-5 flex items-center justify-center rounded text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors shrink-0"
+                        className="h-5 w-5 flex items-center justify-center rounded text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors shrink-0"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -7765,7 +7743,7 @@ export default function PosPage() {
                   {selectedCustomerTag && (
                     <span
                       title={`กลุ่มลูกค้า: ${selectedCustomerTag}`}
-                      className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-purple-300 bg-purple-50 px-1.5 py-0.5 text-[10px] font-semibold text-purple-800 truncate"
+                      className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-purple-300 bg-purple-50 px-1.5 py-0.5 text-[11px] font-semibold text-purple-800 truncate"
                     >
                       🏷️ {selectedCustomerTag}
                     </span>
@@ -7773,7 +7751,7 @@ export default function PosPage() {
                   {selectedCustomerContactNote && (
                     <span
                       title={`ที่อยู่ / ช่องทางติดต่อ: ${selectedCustomerContactNote}`}
-                      className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-teal-300 bg-teal-50 px-1.5 py-0.5 text-[10px] font-semibold text-teal-800 truncate"
+                      className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-teal-300 bg-teal-50 px-1.5 py-0.5 text-[11px] font-semibold text-teal-800 truncate"
                     >
                       🏠 {selectedCustomerContactNote}
                     </span>
@@ -7781,7 +7759,7 @@ export default function PosPage() {
                   {selectedCustomerPaydayCycle && (
                     <span
                       title={`รอบจ่ายเงินประจำ: ${selectedCustomerPaydayCycle}`}
-                      className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-sky-300 bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold text-sky-800 truncate"
+                      className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-sky-300 bg-sky-50 px-1.5 py-0.5 text-[11px] font-semibold text-sky-800 truncate"
                     >
                       🗓️ รอบจ่าย: {selectedCustomerPaydayCycle}
                     </span>
@@ -7789,7 +7767,7 @@ export default function PosPage() {
                   {selectedCustomerVipPct > 0 && (
                     <span
                       title={`ส่วนลดประจำตัวลูกค้า VIP ${formatNumber(selectedCustomerVipPct)}%`}
-                      className="inline-flex items-center gap-0.5 rounded-full border border-violet-300 bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-800 whitespace-nowrap shrink-0 tabular-nums"
+                      className="inline-flex items-center gap-0.5 rounded-full border border-violet-300 bg-violet-100 px-1.5 py-0.5 text-[11px] font-bold text-violet-800 whitespace-nowrap shrink-0 tabular-nums"
                     >
                       👑 VIP ลด {formatNumber(selectedCustomerVipPct)}%
                     </span>
@@ -7797,7 +7775,7 @@ export default function PosPage() {
                   {selectedCustomerStoreCredit > 0 && (
                     <span
                       title={`เงินฝากทอนคงเหลือ ${formatBaht(selectedCustomerStoreCredit)}`}
-                      className="inline-flex items-center gap-0.5 rounded-full border border-teal-300 bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-800 whitespace-nowrap shrink-0 tabular-nums"
+                      className="inline-flex items-center gap-0.5 rounded-full border border-teal-300 bg-teal-100 px-1.5 py-0.5 text-[11px] font-bold text-teal-800 whitespace-nowrap shrink-0 tabular-nums"
                     >
                       💰 เงินฝากทอน: {formatBaht(selectedCustomerStoreCredit)}
                     </span>
@@ -7876,7 +7854,7 @@ export default function PosPage() {
             >
               <PauseCircle className="h-4 w-4" />
               <span>พักบิล</span>
-              <kbd className="hidden sm:inline-block rounded bg-amber-200/80 border border-amber-300 px-1 py-0.5 text-[10px] font-semibold text-amber-900">
+              <kbd className="hidden sm:inline-block rounded bg-amber-200/80 border border-amber-300 px-1 py-0.5 text-[11px] font-semibold text-amber-900">
                 F4
               </kbd>
             </button>
@@ -7890,7 +7868,7 @@ export default function PosPage() {
           >
             <Banknote className="h-4 w-4" />
             <span>สดพอดี</span>
-            <kbd className="hidden sm:inline-block rounded bg-emerald-200/80 border border-emerald-300 px-1 py-0.5 text-[10px] font-semibold text-emerald-900">
+            <kbd className="hidden sm:inline-block rounded bg-emerald-200/80 border border-emerald-300 px-1 py-0.5 text-[11px] font-semibold text-emerald-900">
               Ctrl+↵
             </kbd>
           </button>
@@ -7901,7 +7879,7 @@ export default function PosPage() {
             className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-3.5 px-3 text-sm sm:text-base font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
             <span>ชำระเงิน ({formatBaht(discountAmount > 0 ? finalTotal : cartTotal)})</span>
-            <kbd className="hidden sm:inline-block rounded bg-emerald-700/80 border border-emerald-400/40 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-100">
+            <kbd className="hidden sm:inline-block rounded bg-emerald-700/80 border border-emerald-400/40 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-100">
               F9
             </kbd>
           </button>
@@ -8005,7 +7983,7 @@ export default function PosPage() {
           <div className="bg-white border-b border-slate-200 p-3 sm:p-4 space-y-3 shrink-0">
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <input
                   ref={searchInputRef}
                   type="search"
@@ -8021,7 +7999,7 @@ export default function PosPage() {
                   placeholder="ค้นหาชื่อสินค้า บาร์โค้ด หรือตำแหน่งชั้นวาง (กด Enter เพื่อเพิ่มทันที)..."
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-12 py-2.5 text-sm focus:bg-white focus:border-emerald-500 focus:outline-none"
                 />
-                <kbd className="pointer-events-none hidden sm:inline-flex items-center rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2">
+                <kbd className="pointer-events-none hidden sm:inline-flex items-center rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2">
                   F2
                 </kbd>
               </div>
@@ -8399,7 +8377,7 @@ export default function PosPage() {
                           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-indigo-900 hover:bg-indigo-100 transition-colors whitespace-nowrap"
                         >
                           <span>{bundle.name}</span>
-                          <span className="rounded-md bg-white px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 tabular-nums">
+                          <span className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-semibold text-indigo-700 tabular-nums">
                             {bundle.items.length} รายการ
                             {bundlePreviewPrice > 0
                               ? ` · ${formatBaht(bundlePreviewPrice)}`
@@ -8538,7 +8516,7 @@ export default function PosPage() {
                         } ${
                           isPinned
                             ? 'text-amber-500 hover:bg-amber-100'
-                            : 'text-slate-400 opacity-75 group-hover:opacity-100 hover:text-amber-500 hover:bg-slate-100'
+                            : 'text-slate-500 opacity-75 group-hover:opacity-100 hover:text-amber-500 hover:bg-slate-100'
                         }`}
                       >
                         <Star
@@ -8608,10 +8586,10 @@ export default function PosPage() {
                               key={u.id}
                               type="button"
                               onClick={() => addProductToCart(product, u)}
-                              className={`rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 font-medium text-slate-700 transition-colors ${
+                              className={`rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 font-medium text-slate-700 transition-colors min-h-8 ${
                                 isCompact
-                                  ? 'px-1.5 py-0.5 text-[10px]'
-                                  : 'px-2 py-1 text-[11px]'
+                                  ? 'px-2 py-1 text-[11px]'
+                                  : 'px-2.5 py-1 text-xs'
                               }`}
                             >
                               {u.unit_name} {formatBaht(u.selling_price)}
@@ -8629,7 +8607,7 @@ export default function PosPage() {
                           {promoLabel && (
                             <span
                               title={`ป้ายโปรโมชั่น: ${promoLabel}`}
-                              className="inline-flex items-center gap-1 rounded-md bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-2xs max-w-full"
+                              className="inline-flex items-center gap-1 rounded-md bg-rose-600 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-2xs max-w-full"
                             >
                               <Tag className="h-2.5 w-2.5 shrink-0" />
                               <span className="truncate">{promoLabel}</span>
@@ -8638,7 +8616,7 @@ export default function PosPage() {
                           {wholesaleTier && (
                             <span
                               title={`ซื้อครบ ${formatNumber(wholesaleTier.minQty)} ${product.base_unit} ขึ้นไป ราคาส่ง ฿${formatNumber(wholesaleTier.unitPrice)}/${product.base_unit}`}
-                              className="inline-flex items-center gap-0.5 rounded-md border border-teal-200 bg-teal-50 px-1.5 py-0.5 text-[10px] font-bold text-teal-800 tabular-nums"
+                              className="inline-flex items-center gap-0.5 rounded-md border border-teal-200 bg-teal-50 px-1.5 py-0.5 text-[11px] font-bold text-teal-800 tabular-nums"
                             >
                               <span>
                                 ราคาส่ง ≥{formatNumber(wholesaleTier.minQty)} ชิ้น ฿
@@ -8649,14 +8627,14 @@ export default function PosPage() {
                           {!isCompact && shelfLocation && (
                             <span
                               title={`ตำแหน่งชั้นวาง: ${shelfLocation}`}
-                              className="inline-flex items-center gap-0.5 rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 max-w-full"
+                              className="inline-flex items-center gap-0.5 rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[11px] font-semibold text-indigo-700 max-w-full"
                             >
                               <span aria-hidden="true">📍</span>
                               <span className="truncate">{shelfLocation}</span>
                             </span>
                           )}
                           {isLow && (
-                            <span className="inline-block rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                            <span className="inline-block rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
                               ใกล้หมด
                             </span>
                           )}
@@ -8669,7 +8647,7 @@ export default function PosPage() {
                                 focusSearchOnDesktop();
                               }}
                               title={`กดเพื่อค้นหาสินค้าทดแทน: ${substituteNote}`}
-                              className="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold text-sky-800 hover:bg-sky-100 transition-colors max-w-full text-left"
+                              className="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[11px] font-semibold text-sky-800 hover:bg-sky-100 transition-colors max-w-full text-left"
                             >
                               <Search className="h-3 w-3 shrink-0" />
                               <span className="truncate">ทดแทน: {substituteNote}</span>
@@ -8678,7 +8656,7 @@ export default function PosPage() {
                           {expiryWarning && (
                             <span
                               title={`วันหมดอายุล็อตใกล้สุด: ${expiryWarning.formattedDate} — กรุณาตรวจเช็กก่อนส่งมอบ`}
-                              className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${
+                              className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-semibold ${
                                 expiryWarning.status === 'expired'
                                   ? 'border-red-200 bg-red-100 text-red-700'
                                   : 'border-orange-200 bg-orange-100 text-orange-800'
@@ -9060,7 +9038,7 @@ export default function PosPage() {
       >
         <div className="space-y-3">
           <div className="rounded-2xl bg-slate-900 px-4 py-3.5 text-right text-white shadow-inner">
-            <div className="min-h-[1.125rem] text-xs font-medium text-slate-400 tabular-nums truncate">
+            <div className="min-h-[1.125rem] text-xs font-medium text-slate-500 tabular-nums truncate">
               {calcExpression || '\u00A0'}
             </div>
             <div className="mt-1 text-3xl font-bold tabular-nums tracking-tight truncate">
@@ -9417,7 +9395,7 @@ export default function PosPage() {
                       <span className="font-bold">ติดตามล่าสุด: </span>
                       <span className="break-words">{selectedCustomerLatestFollowup.text}</span>
                       {selectedCustomerLatestFollowup.createdAt && (
-                        <span className="ml-1.5 text-[10px] text-indigo-600 tabular-nums">
+                        <span className="ml-1.5 text-[11px] text-indigo-600 tabular-nums">
                           ({formatDateTime(selectedCustomerLatestFollowup.createdAt)})
                         </span>
                       )}
@@ -9497,17 +9475,17 @@ export default function PosPage() {
                 <Tag className="h-4 w-4 text-amber-600" />
                 <span>ส่วนลดท้ายบิล (บาท)</span>
                 {pointsToRedeem > 0 && (
-                  <span className="rounded-md bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 tabular-nums">
+                  <span className="rounded-md bg-amber-200/80 px-1.5 py-0.5 text-[11px] font-bold text-amber-900 tabular-nums">
                     ใช้ {formatNumber(pointsToRedeem)} แต้ม
                   </span>
                 )}
                 {appliedVipPct > 0 && (
-                  <span className="rounded-md bg-violet-100 border border-violet-200 px-1.5 py-0.5 text-[10px] font-bold text-violet-800 tabular-nums">
+                  <span className="rounded-md bg-violet-100 border border-violet-200 px-1.5 py-0.5 text-[11px] font-bold text-violet-800 tabular-nums">
                     👑 VIP ลด {formatNumber(appliedVipPct)}%
                   </span>
                 )}
                 {storeCreditToUse > 0 && (
-                  <span className="rounded-md bg-teal-100 border border-teal-200 px-1.5 py-0.5 text-[10px] font-bold text-teal-800 tabular-nums">
+                  <span className="rounded-md bg-teal-100 border border-teal-200 px-1.5 py-0.5 text-[11px] font-bold text-teal-800 tabular-nums">
                     💰 ใช้เงินฝากทอน {formatBaht(storeCreditToUse)}
                   </span>
                 )}
@@ -9682,10 +9660,10 @@ export default function PosPage() {
               }`}
             >
               <kbd
-                className={`absolute top-1.5 right-1.5 rounded border px-1 py-0.5 text-[10px] font-bold leading-none ${
+                className={`absolute top-1.5 right-1.5 rounded border px-1 py-0.5 text-[11px] font-bold leading-none ${
                   paymentMethod === 'cash'
                     ? 'border-emerald-300 bg-white text-emerald-700'
-                    : 'border-slate-200 bg-slate-50 text-slate-400'
+                    : 'border-slate-200 bg-slate-50 text-slate-500'
                 }`}
               >
                 F8
@@ -9703,10 +9681,10 @@ export default function PosPage() {
               }`}
             >
               <kbd
-                className={`absolute top-1.5 right-1.5 rounded border px-1 py-0.5 text-[10px] font-bold leading-none ${
+                className={`absolute top-1.5 right-1.5 rounded border px-1 py-0.5 text-[11px] font-bold leading-none ${
                   paymentMethod === 'qr'
                     ? 'border-sky-300 bg-white text-sky-700'
-                    : 'border-slate-200 bg-slate-50 text-slate-400'
+                    : 'border-slate-200 bg-slate-50 text-slate-500'
                 }`}
               >
                 F9
@@ -9724,10 +9702,10 @@ export default function PosPage() {
               }`}
             >
               <kbd
-                className={`absolute top-1.5 right-1.5 rounded border px-1 py-0.5 text-[10px] font-bold leading-none ${
+                className={`absolute top-1.5 right-1.5 rounded border px-1 py-0.5 text-[11px] font-bold leading-none ${
                   paymentMethod === 'credit'
                     ? 'border-amber-300 bg-white text-amber-700'
-                    : 'border-slate-200 bg-slate-50 text-slate-400'
+                    : 'border-slate-200 bg-slate-50 text-slate-500'
                 }`}
               >
                 F10
@@ -9951,7 +9929,7 @@ export default function PosPage() {
                       </span>
                     </span>
                     <span
-                      className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                      className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold ${
                         isSplitCashQr
                           ? 'bg-white text-sky-700'
                           : 'bg-sky-200/70 text-sky-900'
@@ -10046,7 +10024,7 @@ export default function PosPage() {
                           </span>
                         </span>
                         <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                             depositChangeToCredit
                               ? 'bg-white text-teal-700'
                               : 'bg-teal-100 text-teal-700'
@@ -10551,7 +10529,7 @@ export default function PosPage() {
             <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs text-emerald-800 space-y-0.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-bold truncate">ลูกค้า: {selectedCustomer.name}</span>
-                <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 shrink-0">
+                <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 shrink-0">
                   อ้างอิงอัตโนมัติ
                 </span>
               </div>
@@ -10973,7 +10951,7 @@ export default function PosPage() {
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="truncate">
                                     • {item.product_name}{' '}
-                                    <span className="text-slate-400">
+                                    <span className="text-slate-500">
                                       ({item.qty} {item.unit_name})
                                     </span>
                                   </span>
@@ -10990,7 +10968,7 @@ export default function PosPage() {
                             );
                           })}
                           {bill.items.length > 3 && (
-                            <p className="text-[11px] font-medium text-slate-400 pt-0.5">
+                            <p className="text-[11px] font-medium text-slate-500 pt-0.5">
                               + อีก {bill.items.length - 3} รายการ
                             </p>
                           )}
@@ -11267,7 +11245,7 @@ export default function PosPage() {
                         <span className="inline-flex items-center gap-1.5 font-bold text-slate-900">
                           <span>{lastReceipt.customerName}</span>
                           {lastReceipt.vipDiscountPct && lastReceipt.vipDiscountPct > 0 ? (
-                            <span className="inline-flex items-center rounded-full border border-violet-300 bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-800">
+                            <span className="inline-flex items-center rounded-full border border-violet-300 bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-800">
                               👑 VIP ลด {formatNumber(lastReceipt.vipDiscountPct)}%
                             </span>
                           ) : null}
@@ -11613,20 +11591,20 @@ export default function PosPage() {
           {todaySales.length > 0 && (
             <div className="space-y-2.5">
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <input
                   type="text"
                   value={todaySalesSearch}
                   onChange={(e) => setTodaySalesSearch(e.target.value)}
                   placeholder="ค้นหาจากเลขรหัสบิล, หมายเหตุบิล, ชื่อลูกค้า หรือชื่อสินค้า..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-9 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-9 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
                 />
                 {todaySalesSearch && (
                   <button
                     type="button"
                     onClick={() => setTodaySalesSearch('')}
                     aria-label="ล้างคำค้นหา"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600"
                   >
                     <XCircle className="h-4 w-4" />
                   </button>
@@ -11669,7 +11647,7 @@ export default function PosPage() {
                       {formatNumber(filteredTodaySales.length)} บิล
                     </strong>
                     {filteredTodaySales.length !== todaySales.length && (
-                      <span className="text-slate-400 tabular-nums">
+                      <span className="text-slate-500 tabular-nums">
                         {' '}
                         (จากทั้งหมด {formatNumber(todaySales.length)} บิล)
                       </span>
@@ -11788,7 +11766,7 @@ export default function PosPage() {
                           >
                             <span className="truncate">
                               • {item.product_name}{' '}
-                              <span className="text-slate-400">
+                              <span className="text-slate-500">
                                 ({formatNumber(item.qty)} {item.unit_name} ×{' '}
                                 {formatBaht(item.unit_price)})
                               </span>
@@ -12031,7 +12009,7 @@ export default function PosPage() {
                                 ราคา/หน่วย: {formatBaht(item.unit_price)}
                               </span>
                               {conversionRate !== 1 && (
-                                <span className="text-slate-400">
+                                <span className="text-slate-500">
                                   (1 {item.unit_name} = {formatNumber(conversionRate)} หน่วยฐาน)
                                 </span>
                               )}
@@ -12379,7 +12357,7 @@ export default function PosPage() {
                           className={`pr-2 pl-1 py-1 text-xs font-bold ${
                             isActive
                               ? 'text-teal-100 hover:text-white'
-                              : 'text-slate-400 hover:text-rose-600'
+                              : 'text-slate-500 hover:text-rose-600'
                           }`}
                         >
                           ×
@@ -12525,7 +12503,7 @@ export default function PosPage() {
           </div>
 
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
             <input
               ref={priceCheckerInputRef}
               type="text"
@@ -12538,7 +12516,7 @@ export default function PosPage() {
               }}
               onKeyDown={handlePriceCheckerKeyDown}
               placeholder="พิมพ์ชื่อสินค้า, บาร์โค้ดหลัก, บาร์โค้ดแพ็ค/ลัง หรือตำแหน่งชั้นวาง แล้วกด Enter..."
-              className="w-full rounded-xl border border-slate-300 bg-white pl-10 pr-20 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              className="w-full rounded-xl border border-slate-300 bg-white pl-10 pr-20 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             />
             {priceCheckerQuery && (
               <button
@@ -12586,7 +12564,7 @@ export default function PosPage() {
                         <div className="flex items-center gap-1.5 min-w-0">
                           <p className="font-semibold truncate">{item.name}</p>
                           {promoLabels[item.id] && (
-                            <span className="shrink-0 inline-flex items-center gap-0.5 rounded bg-gradient-to-r from-rose-500 to-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                            <span className="shrink-0 inline-flex items-center gap-0.5 rounded bg-gradient-to-r from-rose-500 to-orange-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
                               {promoLabels[item.id]}
                             </span>
                           )}
@@ -12918,12 +12896,12 @@ export default function PosPage() {
                                       {u.unit_name}
                                     </span>
                                     {u.is_default && (
-                                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800">
+                                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-800">
                                         หลัก
                                       </span>
                                     )}
                                     {isHighlighted && (
-                                      <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
+                                      <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[11px] font-bold text-amber-900">
                                         ตรงบาร์โค้ด
                                       </span>
                                     )}
@@ -12945,7 +12923,7 @@ export default function PosPage() {
                                       : `฿${formatBaht(price)}`}
                                   </p>
                                   {!p.allow_custom_price && perBase !== null && (
-                                    <p className="text-[10px] text-slate-500">
+                                    <p className="text-[11px] text-slate-500">
                                       เฉลี่ย ฿{formatBaht(perBase)}/{p.base_unit}
                                     </p>
                                   )}
@@ -13017,7 +12995,7 @@ export default function PosPage() {
                 PromptPay: {settings.promptpay_id}
               </p>
             )}
-            <p className="pt-1 text-[11px] text-slate-400">
+            <p className="pt-1 text-[11px] text-slate-500">
               แก้ไขชื่อร้าน เบอร์โทร ที่อยู่ และ PromptPay ได้ที่หน้า &ldquo;สรุปยอด &amp; ตั้งค่า&rdquo;
             </p>
           </div>
@@ -13078,7 +13056,7 @@ export default function PosPage() {
           </div>
 
           <div className="rounded-xl border border-dashed border-slate-300 bg-white p-3 space-y-1">
-            <p className="text-[11px] font-semibold text-slate-400 text-center">
+            <p className="text-[11px] font-semibold text-slate-500 text-center">
               ตัวอย่างท้ายใบเสร็จ
             </p>
             <p className="text-center text-xs font-medium text-slate-800 whitespace-pre-line">
@@ -13363,7 +13341,7 @@ export default function PosPage() {
                   รายการสินค้าในตะกร้า
                 </div>
                 {cart.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center py-12 text-center text-slate-400">
+                  <div className="flex-1 flex flex-col items-center justify-center py-12 text-center text-slate-500">
                     <ShoppingBag className="h-10 w-10 mb-2 opacity-40" />
                     <p className="text-sm font-medium">ยังไม่มีสินค้าในตะกร้า</p>
                   </div>
@@ -13474,7 +13452,7 @@ export default function PosPage() {
                           className="w-56 h-56 sm:w-64 sm:h-64 rounded-2xl border border-sky-200 bg-white p-3 shadow-sm"
                         />
                       ) : (
-                        <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-2xl border border-sky-200 bg-white flex items-center justify-center text-xs font-semibold text-slate-400">
+                        <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-2xl border border-sky-200 bg-white flex items-center justify-center text-xs font-semibold text-slate-500">
                           กำลังสร้าง QR Code...
                         </div>
                       )}
@@ -13693,7 +13671,7 @@ export default function PosPage() {
               </h3>
               {containerDeposits.length > 0 && (
                 <div className="relative w-full sm:w-56">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
                   <input
                     type="search"
                     value={depositSearch}
@@ -14406,7 +14384,7 @@ export default function PosPage() {
                     {formatNumber(item.qty)} {item.unit_name} × {formatBaht(item.unit_price)}
                   </p>
                   {item.itemNote && (
-                    <p className="text-[10px] italic wrap-break-word">
+                    <p className="text-[11px] italic wrap-break-word">
                       * โน้ต: {item.itemNote}
                     </p>
                   )}
@@ -14520,7 +14498,7 @@ export default function PosPage() {
                       <span>คงเหลือค้างเชื่อสุทธิ</span>
                       <span>{formatBaht(creditDownInfo.netCreditRemaining)}</span>
                     </div>
-                    <p className="text-[10px] tabular-nums">
+                    <p className="text-[11px] tabular-nums">
                       จ่ายสดบางส่วนวันนี้ ฿{formatNumber(creditDownInfo.downPayment)} (ค้างเชื่อสุทธิ ฿
                       {formatNumber(creditDownInfo.netCreditRemaining)})
                     </p>
