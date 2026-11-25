@@ -1590,6 +1590,19 @@ export default function PosPage() {
 
   // Cart & Hold Bills
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [confirmClearCart, setConfirmClearCart] = useState(false);
+  const [lastClearedCartSnapshot, setLastClearedCartSnapshot] = useState<{
+    cart: CartItem[];
+    cartItemNotes: Record<string, string>;
+    manualPriceKeys: string[];
+    selectedCustomerId: string;
+    pointsToRedeem: number;
+    vipDiscountApplied: boolean;
+    billDiscount: string;
+    orderNote: string;
+  } | null>(null);
+  const [showMorePosTools, setShowMorePosTools] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
   const [cartItemNotes, setCartItemNotes] = useState<Record<string, string>>({});
   const [editingNoteKey, setEditingNoteKey] = useState<string | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
@@ -5298,10 +5311,19 @@ export default function PosPage() {
         } else if (!hasOpenModal) {
           openQuickMiscModal();
         }
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (cart.length > 0 && !hasOpenModal && !submitting) {
+          e.preventDefault();
+          exactCashCheckoutRef.current();
+        }
       } else if (e.key === 'F8') {
         if (checkoutOpen && !customerDisplayOpen) {
           e.preventDefault();
           selectPaymentMethod('cash');
+        } else if (cart.length > 0 && !hasOpenModal) {
+          e.preventDefault();
+          setPaymentMethod('cash');
+          openCheckout();
         }
       } else if (e.key === 'F9') {
         e.preventDefault();
@@ -5314,8 +5336,9 @@ export default function PosPage() {
         e.preventDefault();
         if (checkoutOpen && !customerDisplayOpen) {
           selectPaymentMethod('credit');
-        } else if (cart.length > 0 && !hasOpenModal && !submitting) {
-          exactCashCheckoutRef.current();
+        } else if (cart.length > 0 && !hasOpenModal) {
+          setPaymentMethod('credit');
+          openCheckout();
         }
       }
     };
@@ -7082,26 +7105,78 @@ export default function PosPage() {
                 </button>
               </>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                setCart([]);
-                setCartItemNotes({});
-                setEditingNoteKey(null);
-                setManualPriceKeys(new Set());
-                setSelectedCustomerId('');
-                setPointsToRedeem(0);
-                setVipDiscountApplied(false);
-                setBillDiscount('');
-                setOrderNote('');
-                setSplitHoldMode(false);
-                setSplitSelectedKeys(new Set());
-              }}
-              className="text-xs font-medium text-rose-600 hover:underline whitespace-nowrap"
-            >
-              ล้างตะกร้า
-            </button>
+            {confirmClearCart ? (
+              <div className="inline-flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLastClearedCartSnapshot({
+                      cart: [...cart],
+                      cartItemNotes: { ...cartItemNotes },
+                      manualPriceKeys: Array.from(manualPriceKeys),
+                      selectedCustomerId,
+                      pointsToRedeem,
+                      vipDiscountApplied,
+                      billDiscount,
+                      orderNote,
+                    });
+                    setCart([]);
+                    setCartItemNotes({});
+                    setEditingNoteKey(null);
+                    setManualPriceKeys(new Set());
+                    setSelectedCustomerId('');
+                    setPointsToRedeem(0);
+                    setVipDiscountApplied(false);
+                    setBillDiscount('');
+                    setOrderNote('');
+                    setSplitHoldMode(false);
+                    setSplitSelectedKeys(new Set());
+                    setConfirmClearCart(false);
+                    showToast('success', 'ล้างตะกร้าแล้ว (สามารถกดกู้คืนตะกร้าล่าสุดได้)');
+                  }}
+                  className="rounded-lg bg-rose-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-rose-700 whitespace-nowrap"
+                >
+                  ยืนยันล้างตะกร้า?
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmClearCart(false)}
+                  className="text-xs font-medium text-slate-600 hover:underline whitespace-nowrap"
+                >
+                  ยกเลิก
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmClearCart(true)}
+                className="text-xs font-medium text-rose-600 hover:underline whitespace-nowrap"
+              >
+                ล้างตะกร้า
+              </button>
+            )}
           </div>
+        )}
+        {cart.length === 0 && lastClearedCartSnapshot && (
+          <button
+            type="button"
+            onClick={() => {
+              setCart(lastClearedCartSnapshot.cart);
+              setCartItemNotes(lastClearedCartSnapshot.cartItemNotes);
+              setManualPriceKeys(new Set(lastClearedCartSnapshot.manualPriceKeys));
+              setSelectedCustomerId(lastClearedCartSnapshot.selectedCustomerId);
+              setPointsToRedeem(lastClearedCartSnapshot.pointsToRedeem);
+              setVipDiscountApplied(lastClearedCartSnapshot.vipDiscountApplied);
+              setBillDiscount(lastClearedCartSnapshot.billDiscount);
+              setOrderNote(lastClearedCartSnapshot.orderNote);
+              setLastClearedCartSnapshot(null);
+              showToast('success', 'กู้คืนตะกร้าล่าสุดเรียบร้อย');
+            }}
+            className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 whitespace-nowrap"
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+            <span>กู้คืนตะกร้าล่าสุด</span>
+          </button>
         )}
       </div>
 
@@ -7800,13 +7875,13 @@ export default function PosPage() {
             type="button"
             disabled={cart.length === 0 || submitting}
             onClick={handleExactCashCheckout}
-            title="จ่ายเงินสดพอดีทันที (F10)"
+            title="จ่ายเงินสดพอดีทันที (Ctrl+Enter)"
             className="flex items-center justify-center gap-1 rounded-xl border border-emerald-300 bg-emerald-50 px-2.5 py-3.5 text-xs sm:text-sm font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
           >
             <Banknote className="h-4 w-4" />
             <span>สดพอดี</span>
             <kbd className="hidden sm:inline-block rounded bg-emerald-200/80 border border-emerald-300 px-1 py-0.5 text-[10px] font-semibold text-emerald-900">
-              F10
+              Ctrl+↵
             </kbd>
           </button>
           <button
@@ -7815,7 +7890,7 @@ export default function PosPage() {
             onClick={openCheckout}
             className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-3.5 px-3 text-sm sm:text-base font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
-            <span>ชำระเงิน ({formatBaht(cartTotal)})</span>
+            <span>ชำระเงิน ({formatBaht(discountAmount > 0 ? finalTotal : cartTotal)})</span>
             <kbd className="hidden sm:inline-block rounded bg-emerald-700/80 border border-emerald-400/40 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-100">
               F9
             </kbd>
@@ -7831,6 +7906,8 @@ export default function PosPage() {
         <AppShell storeName={settings?.store_name || 'ร้านขายของชำ POS'}>
       {toast && (
         <div
+          role="status"
+          aria-live="polite"
           className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg ${
             toast.type === 'success'
               ? 'bg-emerald-600 text-white'
@@ -7957,38 +8034,6 @@ export default function PosPage() {
               </button>
               <button
                 type="button"
-                onClick={openContainerDepositsModal}
-                title="สมุดบันทึกมัดจำขวด/ลัง/ถังน้ำ และคืนเงินมัดจำด่วน"
-                className="flex items-center gap-1.5 rounded-xl bg-cyan-50 border border-cyan-200 px-3 py-2.5 text-sm font-semibold text-cyan-800 hover:bg-cyan-100 transition-colors shrink-0"
-              >
-                <Package className="h-4 w-4 text-cyan-600" />
-                <span>มัดจำขวด/ถัง</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
-                    containerDeposits.length > 0
-                      ? 'bg-cyan-600 text-white'
-                      : 'bg-cyan-100 text-cyan-700'
-                  }`}
-                >
-                  {containerDeposits.length} • {formatBaht(totalContainerDepositAmount)}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => openQuickDebtModal()}
-                title="รับชำระหนี้ลูกหนี้ด่วนจากหน้าขาย POS"
-                className="flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition-colors shrink-0"
-              >
-                <Banknote className="h-4 w-4 text-amber-600" />
-                <span>รับชำระหนี้ด่วน</span>
-                {debtorCustomers.length > 0 && (
-                  <span className="rounded-full bg-amber-600 px-1.5 py-0.5 text-[11px] font-bold text-white tabular-nums">
-                    {debtorCustomers.length}
-                  </span>
-                )}
-              </button>
-              <button
-                type="button"
                 onClick={openTodaySalesModal}
                 className="flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
               >
@@ -8025,17 +8070,52 @@ export default function PosPage() {
               )}
               <button
                 type="button"
+                onClick={() => setShowMorePosTools((prev) => !prev)}
+                aria-expanded={showMorePosTools}
+                className={`flex items-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-semibold transition-colors shrink-0 ${
+                  showMorePosTools
+                    ? 'bg-slate-800 border-slate-800 text-white'
+                    : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Settings className="h-4 w-4" />
+                <span>{showMorePosTools ? 'ซ่อนเครื่องมือเสริม' : 'เครื่องมือเสริม (⋯)'}</span>
+              </button>
+            </div>
+
+            {showMorePosTools && (
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={openContainerDepositsModal}
+                title="สมุดบันทึกมัดจำขวด/ลัง/ถังน้ำ และคืนเงินมัดจำด่วน"
+                className="flex items-center gap-1.5 rounded-xl bg-cyan-50 border border-cyan-200 px-3 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100 transition-colors shrink-0"
+              >
+                <Package className="h-4 w-4 text-cyan-600" />
+                <span>มัดจำขวด/ถัง</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
+                    containerDeposits.length > 0
+                      ? 'bg-cyan-600 text-white'
+                      : 'bg-cyan-100 text-cyan-700'
+                  }`}
+                >
+                  {containerDeposits.length} • {formatBaht(totalContainerDepositAmount)}
+                </span>
+              </button>
+              <button
+                type="button"
                 onClick={toggleSound}
                 title={soundEnabled ? 'ปิดเสียงปุ่มกด' : 'เปิดเสียงปุ่มกด'}
                 aria-label={soundEnabled ? 'ปิดเสียงปุ่มกด' : 'เปิดเสียงปุ่มกด'}
-                className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2.5 text-xs font-semibold transition-colors shrink-0 ${
+                className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors shrink-0 ${
                   soundEnabled
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
                     : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-slate-200'
                 }`}
               >
                 {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                <span className="hidden sm:inline">{soundEnabled ? 'เสียงเปิด' : 'เสียงปิด'}</span>
+                <span>{soundEnabled ? 'เสียงเปิด' : 'เสียงปิด'}</span>
               </button>
               <button
                 type="button"
@@ -8050,7 +8130,7 @@ export default function PosPage() {
                     ? 'สลับเป็นโหมดการ์ดกระชับ'
                     : 'สลับเป็นโหมดการ์ดใหญ่'
                 }
-                className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2.5 text-xs font-semibold transition-colors shrink-0 ${
+                className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors shrink-0 ${
                   gridDensity === 'compact'
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
                     : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
@@ -8071,7 +8151,7 @@ export default function PosPage() {
                 type="button"
                 onClick={openPriceCheckerModal}
                 title="เช็กราคาและข้อมูลสินค้าด่วนโดยไม่เพิ่มลงตะกร้า (F6)"
-                className="flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-colors shrink-0"
+                className="flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-colors shrink-0"
               >
                 <Tag className="h-4 w-4 text-amber-600" />
                 <span>เช็กราคา (F6)</span>
@@ -8080,7 +8160,7 @@ export default function PosPage() {
                 type="button"
                 onClick={openQuickMiscModal}
                 title="เพิ่มสินค้าเบ็ดเตล็ด / สินค้านอกรายการด่วน (F7)"
-                className="flex items-center gap-1.5 rounded-xl bg-teal-50 border border-teal-200 px-3 py-2.5 text-xs font-semibold text-teal-800 hover:bg-teal-100 transition-colors shrink-0"
+                className="flex items-center gap-1.5 rounded-xl bg-teal-50 border border-teal-200 px-3 py-2 text-xs font-semibold text-teal-800 hover:bg-teal-100 transition-colors shrink-0"
               >
                 <PackagePlus className="h-4 w-4 text-teal-600" />
                 <span>+ สินค้าเบ็ดเตล็ด (F7)</span>
@@ -8089,7 +8169,7 @@ export default function PosPage() {
                 type="button"
                 onClick={() => setCalcOpen(true)}
                 title="เปิดเครื่องคิดเลขด่วน"
-                className="flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-3 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
+                className="flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
               >
                 <Calculator className="h-4 w-4 text-sky-600" />
                 <span>เครื่องคิดเลข</span>
@@ -8098,7 +8178,7 @@ export default function PosPage() {
                 type="button"
                 onClick={openReceiptSettingsModal}
                 title="ตั้งค่าร้าน / ข้อความท้ายใบเสร็จ"
-                className="flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-3 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
+                className="flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
               >
                 <Settings className="h-4 w-4 text-slate-600" />
                 <span>ตั้งค่าร้าน / ใบเสร็จ</span>
@@ -8107,7 +8187,7 @@ export default function PosPage() {
                 type="button"
                 onClick={() => setShortcutsOpen(true)}
                 title="คู่มือคีย์ลัดแป้นพิมพ์ (F1)"
-                className="flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-3 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
+                className="flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
               >
                 <HelpCircle className="h-4 w-4 text-emerald-600" />
                 <span>? คีย์ลัด (F1)</span>
@@ -8117,7 +8197,7 @@ export default function PosPage() {
                 onClick={toggleFullscreen}
                 title={isFullscreen ? 'ออกจากโหมดเต็มจอ' : 'ขยายเต็มจอ'}
                 aria-label={isFullscreen ? 'ย่อจอ' : 'เต็มจอ'}
-                className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2.5 text-xs font-semibold transition-colors shrink-0 ${
+                className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors shrink-0 ${
                   isFullscreen
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
                     : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
@@ -8134,12 +8214,13 @@ export default function PosPage() {
                 type="button"
                 onClick={handleLockScreen}
                 title="ล็อกหน้าจอขายชั่วคราวเพื่อความเป็นส่วนตัว (ยังคงตะกร้าและบิลพักไว้ครบถ้วน)"
-                className="flex items-center gap-1.5 rounded-xl bg-slate-800 border border-slate-700 px-3 py-2.5 text-xs font-semibold text-white hover:bg-slate-900 transition-colors shrink-0"
+                className="flex items-center gap-1.5 rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-900 transition-colors shrink-0"
               >
                 <Lock className="h-4 w-4" />
                 <span>ล็อกหน้าจอ</span>
               </button>
-            </div>
+              </div>
+            )}
 
             {/* Category Tabs, Multiplier & Sort Toggle */}
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -8442,12 +8523,12 @@ export default function PosPage() {
                         title={
                           isPinned ? 'เลิกปักหมุดสินค้าด่วน' : 'ปักหมุดสินค้าด่วน'
                         }
-                        className={`absolute z-10 rounded-lg p-1 transition-colors ${
-                          isCompact ? 'top-1.5 right-1.5' : 'top-2 right-2'
+                        className={`absolute z-10 min-h-8 min-w-8 flex items-center justify-center rounded-lg p-1.5 transition-colors ${
+                          isCompact ? 'top-1 right-1' : 'top-1.5 right-1.5'
                         } ${
                           isPinned
                             ? 'text-amber-500 hover:bg-amber-100'
-                            : 'text-slate-300 opacity-70 group-hover:opacity-100 hover:text-amber-500 hover:bg-slate-100'
+                            : 'text-slate-400 opacity-75 group-hover:opacity-100 hover:text-amber-500 hover:bg-slate-100'
                         }`}
                       >
                         <Star
@@ -8473,7 +8554,7 @@ export default function PosPage() {
                             </span>
                           </div>
                           <p
-                            className={`text-slate-400 ${
+                            className={`text-slate-600 ${
                               isCompact ? 'text-[11px] mt-0.5' : 'text-xs mt-1'
                             }`}
                           >
@@ -9109,13 +9190,14 @@ export default function PosPage() {
           setSplitCashQrEnabled(false);
           setPointsToRedeem(0);
           setVipDiscountApplied(false);
+          setCustomerSearchQuery('');
           if (selectedCustomerId === '__new__') {
             setSelectedCustomerId('');
             setNewCustContactNote('');
           }
         }}
         title="ชำระเงิน"
-        maxWidthClass="max-w-md"
+        maxWidthClass="max-w-2xl"
       >
         <div className="space-y-4">
           {/* Customer / Member & Loyalty Points */}
@@ -9145,7 +9227,16 @@ export default function PosPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="space-y-2">
+              <input
+                type="search"
+                value={customerSearchQuery}
+                onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                placeholder="พิมพ์ค้นหาชื่อ หรือเบอร์โทรลูกค้า..."
+                aria-label="ค้นหาชื่อลูกค้าในหน้าชำระเงิน"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs focus:border-emerald-500 focus:outline-none"
+              />
+              <div className="flex items-center gap-2">
               <select
                 aria-label="เลือกลูกค้าในหน้าชำระเงิน"
                 value={selectedCustomerId}
@@ -9157,7 +9248,17 @@ export default function PosPage() {
                 }`}
               >
                 <option value="">-- ลูกค้าทั่วไป (ไม่ระบุสมาชิก) --</option>
-                {customers.map((c) => {
+                {customers
+                  .filter((c) => {
+                    const q = customerSearchQuery.trim().toLowerCase();
+                    if (!q) return true;
+                    return (
+                      c.name.toLowerCase().includes(q) ||
+                      (c.phone ?? '').toLowerCase().includes(q) ||
+                      c.id === selectedCustomerId
+                    );
+                  })
+                  .map((c) => {
                   const vipPct = defaultDiscounts[c.id] ?? 0;
                   const dueInfo = getCustomerDueInfo(dueDates[c.id], todayIso, c.total_debt);
                   return (
@@ -9179,6 +9280,7 @@ export default function PosPage() {
                 <Plus className="h-3.5 w-3.5" />
                 เพิ่มลูกค้าด่วน
               </button>
+              </div>
             </div>
 
             {selectedCustomerId === '__new__' && (
@@ -12166,9 +12268,8 @@ export default function PosPage() {
               key: 'F7',
               desc: 'เปิด / ปิดโหมดเพิ่มสินค้าเบ็ดเตล็ด / สินค้านอกรายการด่วน',
             },
-            { key: 'F9', desc: 'เปิดหน้าต่างชำระเงิน (เมื่อมีสินค้าในตะกร้า)' },
-            { key: 'F10', desc: 'จ่ายเงินสดพอดีทันที (เมื่อมีสินค้าในตะกร้า)' },
-            { key: 'F8 / F9 / F10', desc: 'เลือก เงินสด / พร้อมเพย์ / เงินเชื่อ (ในหน้าต่างชำระเงิน)' },
+            { key: 'Ctrl+Enter', desc: 'จ่ายเงินสดพอดีทันที (เมื่อมีสินค้าในตะกร้า)' },
+            { key: 'F8 / F9 / F10', desc: 'เปิด/เลือก เงินสด / พร้อมเพย์ / เงินเชื่อ (ใช้ได้ทั้งหน้าหลักและหน้าชำระเงิน)' },
             { key: 'Enter', desc: 'เพิ่มสินค้าทันที (เมื่ออยู่ในช่องค้นหา)' },
           ].map((shortcut) => (
             <div

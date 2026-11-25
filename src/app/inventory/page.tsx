@@ -466,6 +466,7 @@ export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [avgDailySoldMap, setAvgDailySoldMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [showMoreInventoryTools, setShowMoreInventoryTools] = useState(false);
 
   const [search, setSearch] = useState('');
   const [filterMode, setFilterMode] = useState<
@@ -4270,80 +4271,6 @@ export default function InventoryPage() {
             </button>
             <button
               type="button"
-              onClick={handleToggleQuickAuditMode}
-              className={`flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition ${
-                quickAuditMode
-                  ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm hover:bg-indigo-700'
-                  : 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-              }`}
-            >
-              <ClipboardCheck className="h-4 w-4" />
-              <span>
-                {quickAuditMode ? 'ปิดโหมดตรวจนับสต็อกเร็ว' : 'โหมดตรวจนับสต็อกเร็ว'}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={openGlobalMovements}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              <History className="h-4 w-4" />
-              <span>ประวัติสต็อกล่าสุด</span>
-            </button>
-            <button
-              type="button"
-              onClick={openImportCsvModal}
-              className="flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
-            >
-              <Upload className="h-4 w-4" />
-              <span>นำเข้า CSV</span>
-            </button>
-            <button
-              type="button"
-              disabled={filteredProducts.length === 0}
-              onClick={handleExportInventoryCsv}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" />
-              <span>ส่งออก CSV ({filteredProducts.length})</span>
-            </button>
-            <button
-              type="button"
-              onClick={openMetaBackupModal}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              <Database className="h-4 w-4" />
-              <span>สำรอง/กู้คืนตั้งค่า (JSON)</span>
-            </button>
-            <button
-              type="button"
-              onClick={openPriceTagsModal}
-              className="flex items-center gap-1.5 rounded-xl border border-violet-300 bg-violet-50 px-3.5 py-2.5 text-sm font-semibold text-violet-800 hover:bg-violet-100"
-            >
-              <Tag className="h-4 w-4" />
-              <span>พิมพ์ป้ายราคา</span>
-            </button>
-            {noBarcodeProducts.length > 0 && (
-              <button
-                type="button"
-                onClick={openBulkBarcodeModal}
-                className="flex items-center gap-1.5 rounded-xl border border-orange-300 bg-orange-50 px-3.5 py-2.5 text-sm font-semibold text-orange-800 hover:bg-orange-100"
-              >
-                <Barcode className="h-4 w-4" />
-                <span>สร้างบาร์โค้ดร้านให้สินค้าไร้บาร์โค้ด ({noBarcodeProducts.length})</span>
-              </button>
-            )}
-            <button
-              type="button"
-              disabled={activeProducts.length === 0}
-              onClick={openBulkPriceModal}
-              className="flex items-center gap-1.5 rounded-xl border border-indigo-300 bg-indigo-50 px-3.5 py-2.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-100 disabled:opacity-50"
-            >
-              <Coins className="h-4 w-4" />
-              <span>ปรับราคาหลายรายการ</span>
-            </button>
-            <button
-              type="button"
               onClick={() => {
                 setCopiedShoppingList(false);
                 setRestockSupplierFilter('all');
@@ -4353,27 +4280,6 @@ export default function InventoryPage() {
             >
               <ClipboardList className="h-4 w-4" />
               <span>สรุปรายการสั่งของ ({inventorySummary.lowStockCount})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEditingCatId(null);
-                setConfirmDeleteCatId(null);
-                setCatModalOpen(true);
-              }}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              <FolderPlus className="h-4 w-4" />
-              <span>จัดการหมวดหมู่ ({categories.length})</span>
-            </button>
-            <button
-              type="button"
-              disabled={activeProducts.length === 0}
-              onClick={() => openWriteOffModal()}
-              className="flex items-center gap-1.5 rounded-xl border border-rose-300 bg-rose-50 px-3.5 py-2.5 text-sm font-semibold text-rose-800 hover:bg-rose-100 disabled:opacity-50"
-            >
-              <PackageMinus className="h-4 w-4" />
-              <span>ตัดของเสีย / ใช้ในร้าน</span>
             </button>
             <button
               type="button"
@@ -4391,8 +4297,120 @@ export default function InventoryPage() {
               <Plus className="h-4 w-4" />
               <span>เพิ่มสินค้าใหม่</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setShowMoreInventoryTools((prev) => !prev)}
+              aria-expanded={showMoreInventoryTools}
+              className={`flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition-colors ${
+                showMoreInventoryTools
+                  ? 'border-slate-800 bg-slate-800 text-white'
+                  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <span>{showMoreInventoryTools ? 'ซ่อนเครื่องมือเสริม' : 'เครื่องมือคลังเสริม (⋯)'}</span>
+            </button>
           </div>
         </div>
+
+        {showMoreInventoryTools && (
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs">
+            <button
+              type="button"
+              onClick={handleToggleQuickAuditMode}
+              className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                quickAuditMode
+                  ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm hover:bg-indigo-700'
+                  : 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+              }`}
+            >
+              <ClipboardCheck className="h-4 w-4" />
+              <span>
+                {quickAuditMode ? 'ปิดโหมดตรวจนับสต็อกเร็ว' : 'โหมดตรวจนับสต็อกเร็ว'}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={openGlobalMovements}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <History className="h-4 w-4" />
+              <span>ประวัติสต็อกล่าสุด</span>
+            </button>
+            <button
+              type="button"
+              onClick={openImportCsvModal}
+              className="flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+            >
+              <Upload className="h-4 w-4" />
+              <span>นำเข้า CSV</span>
+            </button>
+            <button
+              type="button"
+              disabled={filteredProducts.length === 0}
+              onClick={handleExportInventoryCsv}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" />
+              <span>ส่งออก CSV ({filteredProducts.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={openMetaBackupModal}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <Database className="h-4 w-4" />
+              <span>สำรอง/กู้คืนตั้งค่า (JSON)</span>
+            </button>
+            <button
+              type="button"
+              onClick={openPriceTagsModal}
+              className="flex items-center gap-1.5 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-800 hover:bg-violet-100"
+            >
+              <Tag className="h-4 w-4" />
+              <span>พิมพ์ป้ายราคา</span>
+            </button>
+            {noBarcodeProducts.length > 0 && (
+              <button
+                type="button"
+                onClick={openBulkBarcodeModal}
+                className="flex items-center gap-1.5 rounded-xl border border-orange-300 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-800 hover:bg-orange-100"
+              >
+                <Barcode className="h-4 w-4" />
+                <span>สร้างบาร์โค้ดร้านให้สินค้าไร้บาร์โค้ด ({noBarcodeProducts.length})</span>
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={activeProducts.length === 0}
+              onClick={openBulkPriceModal}
+              className="flex items-center gap-1.5 rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-800 hover:bg-indigo-100 disabled:opacity-50"
+            >
+              <Coins className="h-4 w-4" />
+              <span>ปรับราคาหลายรายการ</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingCatId(null);
+                setConfirmDeleteCatId(null);
+                setCatModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <FolderPlus className="h-4 w-4" />
+              <span>จัดการหมวดหมู่ ({categories.length})</span>
+            </button>
+            <button
+              type="button"
+              disabled={activeProducts.length === 0}
+              onClick={() => openWriteOffModal()}
+              className="flex items-center gap-1.5 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800 hover:bg-rose-100 disabled:opacity-50"
+            >
+              <PackageMinus className="h-4 w-4" />
+              <span>ตัดของเสีย / ใช้ในร้าน</span>
+            </button>
+          </div>
+        )}
 
         {/* Stock Audit Result Banner */}
         {stockAuditResultMsg && (

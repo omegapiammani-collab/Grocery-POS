@@ -1041,6 +1041,7 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [activeShift, setActiveShift] = useState<Shift | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showMoreCustomerTools, setShowMoreCustomerTools] = useState(false);
 
   // Search, Filter & Sort
   const [search, setSearch] = useState('');
@@ -3716,9 +3717,34 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
             </button>
             <button
               type="button"
+              onClick={() => setAddOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
+              <UserPlus className="h-4 w-4" />
+              <span>เพิ่มลูกค้าใหม่</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowMoreCustomerTools((prev) => !prev)}
+              aria-expanded={showMoreCustomerTools}
+              className={`flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition-colors ${
+                showMoreCustomerTools
+                  ? 'border-slate-800 bg-slate-800 text-white'
+                  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <span>{showMoreCustomerTools ? 'ซ่อนเครื่องมือเสริม' : 'เครื่องมือลูกหนี้เสริม (⋯)'}</span>
+            </button>
+          </div>
+        </div>
+
+        {showMoreCustomerTools && (
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs">
+            <button
+              type="button"
               disabled={filteredCustomers.length === 0}
               onClick={handleExportCustomersCsv}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
               <span>ส่งออก CSV ({filteredCustomers.length})</span>
@@ -3727,7 +3753,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
               type="button"
               disabled={allDebtorsForPrint.length === 0}
               onClick={handlePrintAllDebtors}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
               <Printer className="h-4 w-4" />
               <span>
@@ -3740,7 +3766,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
               type="button"
               disabled={customers.length === 0}
               onClick={openBulkCreditModal}
-              className="flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
             >
               <Banknote className="h-4 w-4" />
               <span>ตั้งวงเงินเชื่อแบบกลุ่ม</span>
@@ -3749,7 +3775,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
               type="button"
               disabled={customers.length === 0}
               onClick={openBulkTagModal}
-              className="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3.5 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-100 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-700 hover:bg-teal-100 disabled:opacity-50"
             >
               <Users className="h-4 w-4" />
               <span>จัดกลุ่มลูกค้าแบบกลุ่ม</span>
@@ -3757,21 +3783,13 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
             <button
               type="button"
               onClick={openMetaBackupModal}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
               <Database className="h-4 w-4" />
               <span>สำรอง/กู้คืนตั้งค่า (JSON)</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setAddOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
-            >
-              <UserPlus className="h-4 w-4" />
-              <span>เพิ่มลูกค้าใหม่</span>
-            </button>
           </div>
-        </div>
+        )}
 
         {/* Debt & Loyalty Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
@@ -3856,12 +3874,12 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
             </div>
           </div>
 
-          <div className="rounded-2xl bg-white border border-indigo-200 p-4 flex items-center justify-between shadow-xs">
+          <div className="rounded-2xl bg-white border border-amber-200 p-4 flex items-center justify-between shadow-xs">
             <div>
-              <p className="text-xs font-semibold text-indigo-900">แต้มสะสมรวมทั้งร้าน</p>
-              <p className="text-2xl font-extrabold text-indigo-600 tabular-nums mt-0.5">
+              <p className="text-xs font-semibold text-amber-900">แต้มสะสมรวมทั้งร้าน</p>
+              <p className="text-2xl font-extrabold text-amber-700 tabular-nums mt-0.5">
                 {formatNumber(loyaltySummary.totalPoints)}{' '}
-                <span className="text-xs font-semibold text-indigo-700">แต้ม</span>
+                <span className="text-xs font-semibold text-amber-700">แต้ม</span>
               </p>
               <p className="text-[11px] font-medium text-slate-600 mt-0.5 tabular-nums">
                 แลกส่วนลดได้ (&ge; 10 แต้ม):{' '}
@@ -3870,7 +3888,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                 </span>
               </p>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <div className="h-10 w-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
               <Award className="h-5 w-5" />
             </div>
           </div>
