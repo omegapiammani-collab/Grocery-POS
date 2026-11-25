@@ -27,6 +27,7 @@ import {
   Database,
   RotateCcw,
   MapPin,
+  ClipboardCheck,
 } from 'lucide-react';
 import generatePayload from 'promptpay-qr';
 import QRCode from 'qrcode';
@@ -1042,6 +1043,7 @@ export default function CustomersPage() {
   const [activeShift, setActiveShift] = useState<Shift | null>(null);
   const [loading, setLoading] = useState(true);
   const [showMoreCustomerTools, setShowMoreCustomerTools] = useState(false);
+  const [quickCustomerTableMode, setQuickCustomerTableMode] = useState(false);
 
   // Search, Filter & Sort
   const [search, setSearch] = useState('');
@@ -2237,6 +2239,35 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
     setDueDates(next);
     setBulkDueDateNotice(
       `ตั้งวันนัดชำระ ${formatDueDateTh(nextIso)} ให้ลูกหนี้กลุ่ม "${selectedPaydayCycle}" จำนวน ${targetDebtors.length} รายเรียบร้อยแล้ว`
+    );
+  };
+
+  const handleBulkSetDueDateAllStore = () => {
+    const now = new Date();
+    const next: Record<string, string> = { ...dueDates };
+    let updatedCount = 0;
+    for (const c of customers) {
+      if ((Number(c.total_debt) || 0) <= 0) continue;
+      const cycle = (paydayCycles[c.id] ?? '').trim();
+      if (!cycle) continue;
+      const nextIso = computeNextDueDateFromPaydayCycle(cycle, now);
+      if (nextIso) {
+        next[c.id] = nextIso;
+        updatedCount += 1;
+      }
+    }
+    if (updatedCount === 0) {
+      setBulkDueDateNotice('ไม่พบลูกหนี้ที่มียอดค้างชำระและระบุรอบเงินเดือนออกไว้');
+      return;
+    }
+    try {
+      window.localStorage.setItem(DUE_DATES_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Ignore storage errors
+    }
+    setDueDates(next);
+    setBulkDueDateNotice(
+      `คำนวณและตั้งวันนัดชำระตามรอบจ่ายให้ลูกหนี้ทั้งร้านจำนวน ${updatedCount} รายเรียบร้อยแล้ว`
     );
   };
 
@@ -3742,9 +3773,25 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
           <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs">
             <button
               type="button"
+              onClick={() => setQuickCustomerTableMode((prev) => !prev)}
+              className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                quickCustomerTableMode
+                  ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm hover:bg-indigo-700'
+                  : 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+              }`}
+            >
+              <ClipboardCheck className="h-4 w-4" />
+              <span>
+                {quickCustomerTableMode
+                  ? 'ปิดโหมดตารางจัดการลูกหนี้เร็ว'
+                  : 'โหมดตารางจัดการลูกหนี้เร็ว'}
+              </span>
+            </button>
+            <button
+              type="button"
               disabled={filteredCustomers.length === 0}
               onClick={handleExportCustomersCsv}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
               <span>ส่งออก CSV ({filteredCustomers.length})</span>
@@ -3753,7 +3800,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
               type="button"
               disabled={allDebtorsForPrint.length === 0}
               onClick={handlePrintAllDebtors}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-800 hover:bg-violet-100 disabled:opacity-50"
             >
               <Printer className="h-4 w-4" />
               <span>
@@ -3766,7 +3813,7 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
               type="button"
               disabled={customers.length === 0}
               onClick={openBulkCreditModal}
-              className="flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
             >
               <Banknote className="h-4 w-4" />
               <span>ตั้งวงเงินเชื่อแบบกลุ่ม</span>
@@ -3775,10 +3822,19 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
               type="button"
               disabled={customers.length === 0}
               onClick={openBulkTagModal}
-              className="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-700 hover:bg-teal-100 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-teal-300 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-800 hover:bg-teal-100 disabled:opacity-50"
             >
               <Users className="h-4 w-4" />
               <span>จัดกลุ่มลูกค้าแบบกลุ่ม</span>
+            </button>
+            <button
+              type="button"
+              disabled={debtCustomersCount === 0}
+              onClick={handleBulkSetDueDateAllStore}
+              className="flex items-center gap-1.5 rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800 hover:bg-sky-100 disabled:opacity-50"
+            >
+              <CalendarClock className="h-4 w-4" />
+              <span>คำนวณวันนัดชำระจากรอบจ่ายทั้งร้าน</span>
             </button>
             <button
               type="button"
@@ -4294,6 +4350,118 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                           : filterMode === 'credit_risk' && !search.trim()
                             ? 'ไม่มีลูกหนี้ที่อยู่ในระดับเสี่ยง/เกินกำหนด'
                             : 'ไม่พบรายชื่อลูกค้าตามเงื่อนไขที่ค้นหา'}
+          </div>
+        ) : quickCustomerTableMode ? (
+          <div className="bg-white rounded-2xl border border-indigo-200 overflow-hidden shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-indigo-50/70 px-4 py-2.5 border-b border-indigo-100">
+              <span className="text-xs font-bold text-indigo-900">
+                โหมดตารางจัดการลูกหนี้เร็ว ({formatNumber(filteredCustomers.length)} ราย) — แก้ไขวงเงิน, วันนัดชำระ, รอบจ่าย หรือกลุ่มลูกค้าได้ทันที
+              </span>
+              <button
+                type="button"
+                onClick={() => setQuickCustomerTableMode(false)}
+                className="rounded-lg border border-indigo-200 bg-white px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+              >
+                สลับกลับมุมมองการ์ด
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                  <tr>
+                    <th className="px-3 py-2.5">ลูกค้า</th>
+                    <th className="px-3 py-2.5 text-right">ยอดค้าง (฿)</th>
+                    <th className="px-3 py-2.5">วงเงินเชื่อ (฿)</th>
+                    <th className="px-3 py-2.5">วันนัดชำระ</th>
+                    <th className="px-3 py-2.5">รอบจ่ายเงินเดือน</th>
+                    <th className="px-3 py-2.5">ป้ายกลุ่มลูกค้า</th>
+                    <th className="px-3 py-2.5 text-right">จัดการด่วน</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredCustomers.map((c) => {
+                    const debt = Number(c.total_debt) || 0;
+                    const creditLimit = creditLimits[c.id];
+                    const dueIso = dueDates[c.id] ?? '';
+                    const paydayCycle = paydayCycles[c.id] ?? '';
+                    const customerTag = customerTags[c.id] ?? '';
+                    return (
+                      <tr key={c.id} className="hover:bg-slate-50/80">
+                        <td className="px-3 py-2.5 font-semibold text-slate-900">
+                          <div>{c.name}</div>
+                          {c.phone && (
+                            <div className="text-[11px] font-normal text-slate-500">{c.phone}</div>
+                          )}
+                        </td>
+                        <td
+                          className={`px-3 py-2.5 text-right font-bold tabular-nums ${
+                            debt > 0 ? 'text-amber-700' : 'text-emerald-700'
+                          }`}
+                        >
+                          {formatBaht(debt)}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <input
+                            type="number"
+                            min={0}
+                            step="any"
+                            aria-label={`วงเงินเชื่อของ ${c.name}`}
+                            defaultValue={creditLimit !== undefined ? String(creditLimit) : ''}
+                            placeholder="ไม่จำกัด"
+                            onBlur={(e) => saveCustomerCreditLimit(c.id, e.target.value)}
+                            className="w-24 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs tabular-nums focus:border-emerald-500 focus:outline-none"
+                          />
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <input
+                            type="date"
+                            aria-label={`วันนัดชำระของ ${c.name}`}
+                            value={dueIso}
+                            onChange={(e) => saveCustomerDueDate(c.id, e.target.value)}
+                            className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs tabular-nums focus:border-emerald-500 focus:outline-none"
+                          />
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <input
+                            type="text"
+                            aria-label={`รอบจ่ายเงินเดือนของ ${c.name}`}
+                            defaultValue={paydayCycle}
+                            placeholder="เช่น สิ้นเดือน"
+                            onBlur={(e) => saveCustomerPaydayCycle(c.id, e.target.value)}
+                            className="w-28 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs focus:border-emerald-500 focus:outline-none"
+                          />
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <input
+                            type="text"
+                            aria-label={`ป้ายกลุ่มของ ${c.name}`}
+                            defaultValue={customerTag}
+                            placeholder="เช่น ขาประจำ"
+                            onBlur={(e) => saveCustomerTag(c.id, e.target.value)}
+                            className="w-28 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs focus:border-emerald-500 focus:outline-none"
+                          />
+                        </td>
+                        <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                          {debt > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openPayModal(c)}
+                              className="rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-700"
+                            >
+                              รับชำระ
+                            </button>
+                          ) : (
+                            <span className="text-[11px] font-semibold text-emerald-700">
+                              ✓ ไม่มียอดค้าง
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
