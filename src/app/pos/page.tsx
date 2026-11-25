@@ -7455,7 +7455,7 @@ export default function PosPage() {
                         {promoLabel && (
                           <span
                             title={`ป้ายโปรโมชั่น: ${promoLabel}`}
-                            className="inline-flex items-center gap-1 rounded-md bg-rose-600 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-2xs max-w-full"
+                            className="inline-flex items-center gap-1 rounded-md bg-orange-600 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-2xs max-w-full"
                           >
                             <Tag className="h-2.5 w-2.5 shrink-0" />
                             <span className="truncate">{promoLabel}</span>
@@ -7735,7 +7735,7 @@ export default function PosPage() {
               aria-label="เลือกลูกค้าสมาชิก"
               value={selectedCustomerId === '__new__' ? '' : selectedCustomerId}
               onChange={(e) => handleSelectCustomer(e.target.value)}
-              className="flex-1 min-w-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:border-emerald-500 focus:outline-none"
+              className="flex-1 min-w-0 h-10 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 focus:border-emerald-500 focus:outline-none"
             >
               <option value="">ลูกค้าทั่วไป (ไม่ระบุสมาชิก)</option>
               {customers
@@ -7765,11 +7765,20 @@ export default function PosPage() {
               onClick={openQuickCustomerModal}
               title="เพิ่มลูกค้าด่วน"
               aria-label="เพิ่มลูกค้าด่วน"
-              className="h-9 w-9 flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors shrink-0"
+              className="h-10 w-10 flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors shrink-0"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
             </button>
           </div>
+          {customerSearchQuery.trim() !== '' &&
+            customers.filter((c) => {
+              const q = customerSearchQuery.trim().toLowerCase();
+              return c.name.toLowerCase().includes(q) || (c.phone ?? '').toLowerCase().includes(q);
+            }).length === 0 && (
+              <p className="text-[11px] font-medium text-amber-800 px-1">
+                ไม่พบลูกค้าที่ค้นหา — กดปุ่ม + เพื่อเพิ่มลูกค้าใหม่ได้ทันที
+              </p>
+            )}
           {selectedCustomer && (
             <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-2.5 py-1.5 text-xs space-y-1">
               <div className="flex items-center justify-between gap-2">
@@ -8109,141 +8118,156 @@ export default function PosPage() {
             </div>
 
             {showMorePosTools && (
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={openContainerDepositsModal}
-                title="สมุดบันทึกมัดจำขวด/ลัง/ถังน้ำ และคืนเงินมัดจำด่วน"
-                className="flex items-center gap-1.5 rounded-xl bg-cyan-50 border border-cyan-200 px-3 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100 transition-colors shrink-0"
-              >
-                <Package className="h-4 w-4 text-cyan-600" />
-                <span>มัดจำขวด/ถัง</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
-                    containerDeposits.length > 0
-                      ? 'bg-cyan-600 text-white'
-                      : 'bg-cyan-100 text-cyan-700'
-                  }`}
-                >
-                  {containerDeposits.length} • {formatBaht(totalContainerDepositAmount)}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={toggleSound}
-                title={soundEnabled ? 'ปิดเสียงปุ่มกด' : 'เปิดเสียงปุ่มกด'}
-                aria-label={soundEnabled ? 'ปิดเสียงปุ่มกด' : 'เปิดเสียงปุ่มกด'}
-                className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors shrink-0 ${
-                  soundEnabled
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                    : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-slate-200'
-                }`}
-              >
-                {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                <span>{soundEnabled ? 'เสียงเปิด' : 'เสียงปิด'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={toggleGridDensity}
-                title={
-                  gridDensity === 'large'
-                    ? 'กำลังแสดงการ์ดใหญ่ (จอสัมผัส) — คลิกเพื่อสลับเป็นการ์ดกระชับ'
-                    : 'กำลังแสดงการ์ดกระชับ (แสดงหลายรายการ) — คลิกเพื่อสลับเป็นการ์ดใหญ่'
-                }
-                aria-label={
-                  gridDensity === 'large'
-                    ? 'สลับเป็นโหมดการ์ดกระชับ'
-                    : 'สลับเป็นโหมดการ์ดใหญ่'
-                }
-                className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors shrink-0 ${
-                  gridDensity === 'compact'
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                    : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                {gridDensity === 'large' ? (
-                  <LayoutGrid className="h-4 w-4" />
-                ) : (
-                  <Grid3x3 className="h-4 w-4" />
-                )}
-                <span>
-                  {gridDensity === 'large'
-                    ? 'การ์ดใหญ่ (จอสัมผัส)'
-                    : 'การ์ดกระชับ (แสดงหลายรายการ)'}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={openPriceCheckerModal}
-                title="เช็กราคาและข้อมูลสินค้าด่วนโดยไม่เพิ่มลงตะกร้า (F6)"
-                className="flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-colors shrink-0"
-              >
-                <Tag className="h-4 w-4 text-amber-600" />
-                <span>เช็กราคา (F6)</span>
-              </button>
-              <button
-                type="button"
-                onClick={openQuickMiscModal}
-                title="เพิ่มสินค้าเบ็ดเตล็ด / สินค้านอกรายการด่วน (F7)"
-                className="flex items-center gap-1.5 rounded-xl bg-teal-50 border border-teal-200 px-3 py-2 text-xs font-semibold text-teal-800 hover:bg-teal-100 transition-colors shrink-0"
-              >
-                <PackagePlus className="h-4 w-4 text-teal-600" />
-                <span>+ สินค้าเบ็ดเตล็ด (F7)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setCalcOpen(true)}
-                title="เปิดเครื่องคิดเลขด่วน"
-                className="flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
-              >
-                <Calculator className="h-4 w-4 text-sky-600" />
-                <span>เครื่องคิดเลข</span>
-              </button>
-              <button
-                type="button"
-                onClick={openReceiptSettingsModal}
-                title="ตั้งค่าร้าน / ข้อความท้ายใบเสร็จ"
-                className="flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
-              >
-                <Settings className="h-4 w-4 text-slate-600" />
-                <span>ตั้งค่าร้าน / ใบเสร็จ</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShortcutsOpen(true)}
-                title="คู่มือคีย์ลัดแป้นพิมพ์ (F1)"
-                className="flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors shrink-0"
-              >
-                <HelpCircle className="h-4 w-4 text-emerald-600" />
-                <span>? คีย์ลัด (F1)</span>
-              </button>
-              <button
-                type="button"
-                onClick={toggleFullscreen}
-                title={isFullscreen ? 'ออกจากโหมดเต็มจอ' : 'ขยายเต็มจอ'}
-                aria-label={isFullscreen ? 'ย่อจอ' : 'เต็มจอ'}
-                className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors shrink-0 ${
-                  isFullscreen
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                    : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                {isFullscreen ? (
-                  <Minimize2 className="h-4 w-4" />
-                ) : (
-                  <Maximize2 className="h-4 w-4" />
-                )}
-                <span>{isFullscreen ? 'ย่อจอ' : 'เต็มจอ'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleLockScreen}
-                title="ล็อกหน้าจอขายชั่วคราวเพื่อความเป็นส่วนตัว (ยังคงตะกร้าและบิลพักไว้ครบถ้วน)"
-                className="flex items-center gap-1.5 rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-900 transition-colors shrink-0"
-              >
-                <Lock className="h-4 w-4" />
-                <span>ล็อกหน้าจอ</span>
-              </button>
+              <div className="pt-2.5 border-t border-slate-100 grid grid-cols-1 xl:grid-cols-3 gap-2.5">
+                <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-2 space-y-1.5">
+                  <p className="text-[11px] font-bold text-slate-600 px-1">งานขาย &amp; มัดจำ</p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={openContainerDepositsModal}
+                      title="สมุดบันทึกมัดจำขวด/ลัง/ถังน้ำ และคืนเงินมัดจำด่วน"
+                      className="flex items-center gap-1.5 rounded-xl bg-cyan-50 border border-cyan-200 px-2.5 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100 transition-colors shrink-0"
+                    >
+                      <Package className="h-4 w-4 text-cyan-600" />
+                      <span>มัดจำขวด/ถัง</span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
+                          containerDeposits.length > 0
+                            ? 'bg-cyan-600 text-white'
+                            : 'bg-cyan-100 text-cyan-700'
+                        }`}
+                      >
+                        {containerDeposits.length} • {formatBaht(totalContainerDepositAmount)}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openPriceCheckerModal}
+                      title="เช็กราคาและข้อมูลสินค้าด่วนโดยไม่เพิ่มลงตะกร้า (F6)"
+                      className="flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-2.5 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-colors shrink-0"
+                    >
+                      <Tag className="h-4 w-4 text-amber-600" />
+                      <span>เช็กราคา (F6)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openQuickMiscModal}
+                      title="เพิ่มสินค้าเบ็ดเตล็ด / สินค้านอกรายการด่วน (F7)"
+                      className="flex items-center gap-1.5 rounded-xl bg-teal-50 border border-teal-200 px-2.5 py-2 text-xs font-semibold text-teal-800 hover:bg-teal-100 transition-colors shrink-0"
+                    >
+                      <PackagePlus className="h-4 w-4 text-teal-600" />
+                      <span>+ เบ็ดเตล็ด (F7)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCalcOpen(true)}
+                      title="เปิดเครื่องคิดเลขด่วน"
+                      className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
+                    >
+                      <Calculator className="h-4 w-4 text-sky-600" />
+                      <span>เครื่องคิดเลข</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-2 space-y-1.5">
+                  <p className="text-[11px] font-bold text-slate-600 px-1">หน้าจอ &amp; เสียง</p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={toggleGridDensity}
+                      title={
+                        gridDensity === 'large'
+                          ? 'กำลังแสดงการ์ดใหญ่ (จอสัมผัส) — คลิกเพื่อสลับเป็นการ์ดกระชับ'
+                          : 'กำลังแสดงการ์ดกระชับ (แสดงหลายรายการ) — คลิกเพื่อสลับเป็นการ์ดใหญ่'
+                      }
+                      aria-label={
+                        gridDensity === 'large'
+                          ? 'สลับเป็นโหมดการ์ดกระชับ'
+                          : 'สลับเป็นโหมดการ์ดใหญ่'
+                      }
+                      className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors shrink-0 ${
+                        gridDensity === 'compact'
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {gridDensity === 'large' ? (
+                        <LayoutGrid className="h-4 w-4" />
+                      ) : (
+                        <Grid3x3 className="h-4 w-4" />
+                      )}
+                      <span>
+                        {gridDensity === 'large' ? 'การ์ดใหญ่' : 'การ์ดกระชับ'}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={toggleSound}
+                      title={soundEnabled ? 'ปิดเสียงปุ่มกด' : 'เปิดเสียงปุ่มกด'}
+                      aria-label={soundEnabled ? 'ปิดเสียงปุ่มกด' : 'เปิดเสียงปุ่มกด'}
+                      className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors shrink-0 ${
+                        soundEnabled
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                          : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                      <span>{soundEnabled ? 'เสียงเปิด' : 'เสียงปิด'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={toggleFullscreen}
+                      title={isFullscreen ? 'ออกจากโหมดเต็มจอ' : 'ขยายเต็มจอ'}
+                      aria-label={isFullscreen ? 'ย่อจอ' : 'เต็มจอ'}
+                      className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors shrink-0 ${
+                        isFullscreen
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {isFullscreen ? (
+                        <Minimize2 className="h-4 w-4" />
+                      ) : (
+                        <Maximize2 className="h-4 w-4" />
+                      )}
+                      <span>{isFullscreen ? 'ย่อจอ' : 'เต็มจอ'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-2 space-y-1.5">
+                  <p className="text-[11px] font-bold text-slate-600 px-1">ตั้งค่า &amp; ระบบ</p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={openReceiptSettingsModal}
+                      title="ตั้งค่าร้าน / ข้อความท้ายใบเสร็จ"
+                      className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
+                    >
+                      <Settings className="h-4 w-4 text-slate-600" />
+                      <span>ตั้งค่าร้าน / ใบเสร็จ</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShortcutsOpen(true)}
+                      title="คู่มือคีย์ลัดแป้นพิมพ์ (F1)"
+                      className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
+                    >
+                      <HelpCircle className="h-4 w-4 text-emerald-600" />
+                      <span>? คีย์ลัด (F1)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleLockScreen}
+                      title="ล็อกหน้าจอขายชั่วคราวเพื่อความเป็นส่วนตัว (ยังคงตะกร้าและบิลพักไว้ครบถ้วน)"
+                      className="flex items-center gap-1.5 rounded-xl bg-slate-800 border border-slate-700 px-2.5 py-2 text-xs font-semibold text-white hover:bg-slate-900 transition-colors shrink-0"
+                    >
+                      <Lock className="h-4 w-4" />
+                      <span>ล็อกหน้าจอ</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -8266,7 +8290,7 @@ export default function PosPage() {
                   onClick={() => setSelectedCat('promo')}
                   className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                     selectedCat === 'promo'
-                      ? 'bg-rose-500 text-white'
+                      ? 'bg-orange-600 text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -8548,7 +8572,7 @@ export default function PosPage() {
                         title={
                           isPinned ? 'เลิกปักหมุดสินค้าด่วน' : 'ปักหมุดสินค้าด่วน'
                         }
-                        className={`absolute z-10 min-h-9 min-w-9 flex items-center justify-center rounded-lg p-1.5 transition-colors ${
+                        className={`absolute z-10 min-h-10 min-w-10 flex items-center justify-center rounded-lg p-1.5 transition-colors ${
                           isCompact ? 'top-1 right-1' : 'top-1.5 right-1.5'
                         } ${
                           isPinned
@@ -8644,7 +8668,7 @@ export default function PosPage() {
                           {promoLabel && (
                             <span
                               title={`ป้ายโปรโมชั่น: ${promoLabel}`}
-                              className="inline-flex items-center gap-1 rounded-md bg-rose-600 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-2xs max-w-full"
+                              className="inline-flex items-center gap-1 rounded-md bg-orange-600 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-2xs max-w-full"
                             >
                               <Tag className="h-2.5 w-2.5 shrink-0" />
                               <span className="truncate">{promoLabel}</span>
@@ -9306,6 +9330,15 @@ export default function PosPage() {
                 เพิ่มลูกค้าด่วน
               </button>
               </div>
+              {customerSearchQuery.trim() !== '' &&
+                customers.filter((c) => {
+                  const q = customerSearchQuery.trim().toLowerCase();
+                  return c.name.toLowerCase().includes(q) || (c.phone ?? '').toLowerCase().includes(q);
+                }).length === 0 && (
+                  <p className="text-[11px] font-medium text-amber-800 px-1">
+                    ไม่พบลูกค้าที่ค้นหา — กดปุ่ม &quot;+ เพิ่มลูกค้าด่วน&quot; ได้ทันที
+                  </p>
+                )}
             </div>
 
             {selectedCustomerId === '__new__' && (
