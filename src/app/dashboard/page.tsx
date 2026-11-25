@@ -7356,7 +7356,7 @@ export default function DashboardPage() {
                                 </div>
                               </td>
                               <td className="py-2 px-2">
-                                <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700 whitespace-nowrap">
+                                <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-[11px] font-bold text-orange-800 whitespace-nowrap">
                                   {row.promoLabel}
                                 </span>
                               </td>

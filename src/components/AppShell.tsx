@@ -61,10 +61,10 @@ export function AppShell({
                 key={item.href}
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm transition-colors ${
                   active
-                    ? 'bg-emerald-50 text-emerald-700 font-semibold'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-emerald-50/90 text-emerald-800 ring-1 ring-emerald-200/80 font-bold shadow-2xs'
+                    : 'font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-emerald-600' : 'text-slate-500'}`} />
@@ -119,8 +119,10 @@ export function AppShell({
               key={item.href}
               href={item.href}
               aria-current={active ? 'page' : undefined}
-              className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[11px] font-medium transition-colors ${
-                active ? 'text-emerald-600 font-semibold' : 'text-slate-500'
+              className={`flex flex-col items-center gap-0.5 rounded-lg px-2.5 py-1 text-[11px] transition-colors ${
+                active
+                  ? 'bg-emerald-50 text-emerald-700 font-bold'
+                  : 'font-medium text-slate-600 hover:text-slate-900'
               }`}
             >
               <Icon className="h-5 w-5" />

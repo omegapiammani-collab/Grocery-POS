@@ -9,6 +9,13 @@
   --border-subtle: #e2e8f0;
   --brand-primary: #059669;
   --brand-primary-hover: #047857;
+  --brand-surface: #ecfdf5;
+  --promo-primary: #ea580c;
+  --promo-surface: #fff7ed;
+  --qr-primary: #0284c7;
+  --qr-surface: #f0f9ff;
+  --loyalty-primary: #d97706;
+  --loyalty-surface: #fffbeb;
   --text-muted: #475569;
   --status-warning: #d97706;
   --status-danger: #dc2626;
@@ -32,6 +39,13 @@
   --color-border-subtle: var(--border-subtle);
   --color-brand-primary: var(--brand-primary);
   --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-brand-surface: var(--brand-surface);
+  --color-promo-primary: var(--promo-primary);
+  --color-promo-surface: var(--promo-surface);
+  --color-qr-primary: var(--qr-primary);
+  --color-qr-surface: var(--qr-surface);
+  --color-loyalty-primary: var(--loyalty-primary);
+  --color-loyalty-surface: var(--loyalty-surface);
   --color-text-muted: var(--text-muted);
   --color-status-warning: var(--status-warning);
   --color-status-danger: var(--status-danger);

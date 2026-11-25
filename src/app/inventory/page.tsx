@@ -4771,8 +4771,8 @@ export default function InventoryPage() {
               onClick={() => setFilterMode('has_promo')}
               className={`flex items-center gap-1 rounded-xl px-3.5 py-2 text-xs font-semibold ${
                 filterMode === 'has_promo'
-                  ? 'bg-rose-600 text-white'
-                  : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-orange-50 text-orange-800 hover:bg-orange-100'
               }`}
             >
               <Tag className="h-3.5 w-3.5" />
@@ -5005,7 +5005,7 @@ export default function InventoryPage() {
                                 )}
                               {promoLabels[p.id] && (
                                 <span
-                                  className="inline-flex items-center gap-1 rounded bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[11px] font-bold text-rose-700"
+                                  className="inline-flex items-center gap-1 rounded bg-orange-50 border border-orange-200 px-1.5 py-0.5 text-[11px] font-bold text-orange-800"
                                   title={`ป้ายโปรโมชั่น / ป้ายเชียร์ขาย: ${promoLabels[p.id]}`}
                                 >
                                   <Tag className="h-3 w-3 shrink-0" />
