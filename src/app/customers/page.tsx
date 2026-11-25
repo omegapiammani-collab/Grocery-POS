@@ -3706,8 +3706,8 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
     <>
       <div className="print:hidden">
         <AppShell storeName={settings?.store_name || 'ร้านขายของชำ POS'}>
-      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5">
+        <div className="space-y-3">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
               ลูกค้าเงินเชื่อ (เซ็นไว้ก่อน)
@@ -3722,9 +3722,17 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
+              onClick={openRecentPayments}
+              className="flex items-center gap-1.5 rounded-xl border border-teal-300 bg-teal-50 px-3.5 py-2.5 text-sm font-semibold text-teal-800 hover:bg-teal-100"
+            >
+              <History className="h-4 w-4" />
+              <span>ประวัติรับชำระหนี้ทั้งร้าน</span>
+            </button>
+            <button
+              type="button"
               disabled={debtCustomersCount === 0}
               onClick={handleCopyDebtSummary}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
             >
               {copiedDebtSummary ? (
                 <>
@@ -3734,22 +3742,23 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
               ) : (
                 <>
                   <Copy className="h-4 w-4" />
-                  <span>คัดลอกสรุปยอดลูกหนี้ทั้งร้าน</span>
+                  <span>คัดลอกสรุปยอดลูกหนี้ ({debtCustomersCount})</span>
                 </>
               )}
             </button>
             <button
               type="button"
-              onClick={openRecentPayments}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              disabled={customers.length === 0}
+              onClick={openBulkCreditModal}
+              className="flex items-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 shadow-sm disabled:opacity-50"
             >
-              <History className="h-4 w-4" />
-              <span>ประวัติรับชำระหนี้ทั้งร้าน</span>
+              <Banknote className="h-4 w-4" />
+              <span>ตั้งวงเงินเชื่อแบบกลุ่ม</span>
             </button>
             <button
               type="button"
               onClick={() => setAddOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 shadow-sm"
             >
               <UserPlus className="h-4 w-4" />
               <span>เพิ่มลูกค้าใหม่</span>
@@ -3798,6 +3807,14 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
             </button>
             <button
               type="button"
+              onClick={openMetaBackupModal}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <Database className="h-4 w-4" />
+              <span>สำรอง/กู้คืนตั้งค่า (JSON)</span>
+            </button>
+            <button
+              type="button"
               disabled={allDebtorsForPrint.length === 0}
               onClick={handlePrintAllDebtors}
               className="flex items-center gap-1.5 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-800 hover:bg-violet-100 disabled:opacity-50"
@@ -3808,15 +3825,6 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
                   ? 'พิมพ์สรุปลูกหนี้ทั้งร้าน (A4)'
                   : `พิมพ์สรุปลูกหนี้ (${allDebtorsForPrint.length}) (A4)`}
               </span>
-            </button>
-            <button
-              type="button"
-              disabled={customers.length === 0}
-              onClick={openBulkCreditModal}
-              className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
-            >
-              <Banknote className="h-4 w-4" />
-              <span>ตั้งวงเงินเชื่อแบบกลุ่ม</span>
             </button>
             <button
               type="button"
@@ -3835,14 +3843,6 @@ const DEBT_REMINDER_TONE_OPTIONS: ReadonlyArray<{
             >
               <CalendarClock className="h-4 w-4" />
               <span>คำนวณวันนัดชำระจากรอบจ่ายทั้งร้าน</span>
-            </button>
-            <button
-              type="button"
-              onClick={openMetaBackupModal}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              <Database className="h-4 w-4" />
-              <span>สำรอง/กู้คืนตั้งค่า (JSON)</span>
             </button>
           </div>
         )}
