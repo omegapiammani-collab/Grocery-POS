@@ -110,7 +110,7 @@ export function AppShell({
       </main>
 
       {/* Mobile Bottom Tab Bar */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-20 bg-white border-t border-slate-200 flex items-center justify-around px-1 py-1.5">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-20 bg-white border-t border-slate-200 flex items-center justify-around px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))]">
         {navItems.map((item) => {
           const active = pathname.startsWith(item.href);
           const Icon = item.icon;
