@@ -7727,7 +7727,7 @@ export default function PosPage() {
             onChange={(e) => setCustomerSearchQuery(e.target.value)}
             placeholder="ค้นหาชื่อหรือเบอร์โทรลูกค้า..."
             aria-label="ค้นหาชื่อลูกค้าในตะกร้า"
-            className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs focus:border-emerald-500 focus:outline-none"
+            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm focus:border-emerald-500 focus:outline-none"
           />
           <div className="flex items-center gap-1.5">
             <UserCheck className="h-4 w-4 text-slate-500 shrink-0" />
@@ -9283,7 +9283,7 @@ export default function PosPage() {
                 onChange={(e) => setCustomerSearchQuery(e.target.value)}
                 placeholder="พิมพ์ค้นหาชื่อ หรือเบอร์โทรลูกค้า..."
                 aria-label="ค้นหาชื่อลูกค้าในหน้าชำระเงิน"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs focus:border-emerald-500 focus:outline-none"
+                className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm focus:border-emerald-500 focus:outline-none"
               />
               <div className="flex items-center gap-2">
               <select
