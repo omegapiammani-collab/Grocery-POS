@@ -385,6 +385,7 @@ function renderChangeBreakdownBar(amount: number, variant: 'checkout' | 'receipt
 }
 
 const HELD_BILLS_STORAGE_KEY = 'pos_held_bills_v1';
+const ACTIVE_CART_STORAGE_KEY = 'pos_active_cart_v1';
 const SOUND_ENABLED_STORAGE_KEY = 'pos_sound_enabled_v1';
 const GRID_DENSITY_STORAGE_KEY = 'pos_grid_density_v1';
 const CREDIT_LIMITS_STORAGE_KEY = 'customer_credit_limits_v1';
@@ -1616,6 +1617,18 @@ export default function PosPage() {
 
   // Checkout modal
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+  const [expiredConfirmPending, setExpiredConfirmPending] = useState(false);
+  const [showCheckoutCustomerSection, setShowCheckoutCustomerSection] = useState(false);
+  const [showCheckoutDiscountSection, setShowCheckoutDiscountSection] = useState(false);
+  const [showCheckoutOldDebtSection, setShowCheckoutOldDebtSection] = useState(false);
+  const [showCheckoutNoteSection, setShowCheckoutNoteSection] = useState(false);
+  const [showMoreDiscountPresets, setShowMoreDiscountPresets] = useState(false);
+  const [showMoreReceiptActions, setShowMoreReceiptActions] = useState(false);
+  const [expandedHeldBillActionsId, setExpandedHeldBillActionsId] = useState<string | null>(null);
+  const cashReceivedInputRef = useRef<HTMLInputElement>(null);
+  const [highlightedProductIndex, setHighlightedProductIndex] = useState<number>(-1);
+  const [activeProductInfoId, setActiveProductInfoId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [billDiscount, setBillDiscount] = useState<string>('');
   const [cashReceived, setCashReceived] = useState<string>('');
@@ -1653,7 +1666,7 @@ export default function PosPage() {
   const [orderNote, setOrderNote] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null);
 
   // Quick open shift modal
   const [shiftModalOpen, setShiftModalOpen] = useState(false);
@@ -1856,6 +1869,55 @@ export default function PosPage() {
       // ignore localStorage read errors
     }
   }, []);
+
+  // Load active cart from localStorage on mount
+  const activeCartHydratedRef = useRef(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(ACTIVE_CART_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.cart) && parsed.cart.length > 0) {
+          setCart(parsed.cart);
+          if (parsed.cartItemNotes && typeof parsed.cartItemNotes === 'object') {
+            setCartItemNotes(parsed.cartItemNotes);
+          }
+          if (typeof parsed.selectedCustomerId === 'string') {
+            setSelectedCustomerId(parsed.selectedCustomerId);
+          }
+          if (typeof parsed.orderNote === 'string') {
+            setOrderNote(parsed.orderNote);
+          }
+        }
+      }
+    } catch {
+      // ignore localStorage read errors
+    } finally {
+      activeCartHydratedRef.current = true;
+    }
+  }, []);
+
+  // Save active cart to localStorage on change
+  useEffect(() => {
+    if (!activeCartHydratedRef.current) return;
+    try {
+      if (cart.length === 0) {
+        localStorage.removeItem(ACTIVE_CART_STORAGE_KEY);
+      } else {
+        localStorage.setItem(
+          ACTIVE_CART_STORAGE_KEY,
+          JSON.stringify({
+            cart,
+            cartItemNotes,
+            selectedCustomerId,
+            orderNote,
+          })
+        );
+      }
+    } catch {
+      // ignore localStorage write errors
+    }
+  }, [cart, cartItemNotes, selectedCustomerId, orderNote]);
 
   // Load customer credit limits from localStorage
   useEffect(() => {
@@ -2693,7 +2755,7 @@ export default function PosPage() {
     [soundEnabled]
   );
 
-  const showToast = (type: 'success' | 'error', text: string) => {
+  const showToast = (type: 'success' | 'warning' | 'error', text: string) => {
     setToast({ type, text });
     setTimeout(() => setToast(null), 3500);
   };
@@ -4280,19 +4342,48 @@ export default function PosPage() {
       setQtyMultiplier(1);
     }
     playBeep('add');
+    if (!product.allow_custom_price && product.stock_qty <= 0) {
+      showToast('warning', `เตือน: "${product.name}" สต็อกในระบบเป็น 0 (เพิ่มลงตะกร้าแล้ว)`);
+    }
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      if (filteredProducts.length === 0) return;
+      e.preventDefault();
+      setHighlightedProductIndex((prev) =>
+        prev < filteredProducts.length - 1 ? prev + 1 : 0
+      );
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      if (filteredProducts.length === 0) return;
+      e.preventDefault();
+      setHighlightedProductIndex((prev) =>
+        prev > 0 ? prev - 1 : filteredProducts.length - 1
+      );
+      return;
+    }
+    if (e.key === 'Escape') {
+      if (highlightedProductIndex >= 0) {
+        e.preventDefault();
+        setHighlightedProductIndex(-1);
+      } else if (search !== '') {
+        e.preventDefault();
+        setSearch('');
+      }
+      return;
+    }
     if (e.key !== 'Enter') return;
     const q = search.trim().toLowerCase();
-    if (!q) return;
+    if (!q && highlightedProductIndex < 0) return;
 
-    const exactBarcodeProduct = products.find(
-      (p) => p.barcode && p.barcode.trim().toLowerCase() === q
-    );
+    const exactBarcodeProduct = q
+      ? products.find((p) => p.barcode && p.barcode.trim().toLowerCase() === q)
+      : undefined;
     let matchedUnitProduct: Product | null = null;
     let matchedUnit: ProductUnit | undefined;
-    if (!exactBarcodeProduct) {
+    if (!exactBarcodeProduct && q) {
       for (const p of products) {
         const pUnitBarcodes = unitBarcodes[p.id];
         if (!pUnitBarcodes) continue;
@@ -4307,15 +4398,21 @@ export default function PosPage() {
         }
       }
     }
+    const highlightedProduct =
+      highlightedProductIndex >= 0 && highlightedProductIndex < filteredProducts.length
+        ? filteredProducts[highlightedProductIndex]
+        : null;
     const targetProduct =
       exactBarcodeProduct ??
       matchedUnitProduct ??
+      highlightedProduct ??
       (filteredProducts.length === 1 ? filteredProducts[0] : null);
 
     if (targetProduct) {
       e.preventDefault();
       addProductToCart(targetProduct, matchedUnit);
       setSearch('');
+      setHighlightedProductIndex(-1);
       if (!targetProduct.allow_custom_price) {
         showToast(
           'success',
@@ -5135,9 +5232,25 @@ export default function PosPage() {
     } else {
       setCreditDueDateInput(selectedCustomerId ? (dueDates[selectedCustomerId] ?? '') : '');
     }
+    setCheckoutError('');
+    setExpiredConfirmPending(false);
+    setShowCheckoutCustomerSection(false);
+    setShowCheckoutDiscountSection(false);
+    setShowCheckoutOldDebtSection(false);
+    setShowCheckoutNoteSection(false);
+    setShowMoreDiscountPresets(false);
     setCheckoutOpen(true);
     setMobileCartOpen(false);
-  }, [billDiscount, cart.length, cartTotal, customers, selectedCustomerId]);
+  }, [billDiscount, cart.length, cartTotal, customers, dueDates, selectedCustomerId]);
+
+  useEffect(() => {
+    if (!checkoutOpen || paymentMethod !== 'cash') return;
+    const timer = window.setTimeout(() => {
+      cashReceivedInputRef.current?.focus();
+      cashReceivedInputRef.current?.select();
+    }, 40);
+    return () => window.clearTimeout(timer);
+  }, [checkoutOpen, paymentMethod]);
 
   const exactCashCheckoutRef = useRef<() => void>(() => {});
 
@@ -5304,7 +5417,14 @@ export default function PosPage() {
           openQuickMiscModal();
         }
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        if (cart.length > 0 && !hasOpenModal && !submitting) {
+        if (checkoutOpen && !customerDisplayOpen && !submitting) {
+          e.preventDefault();
+          completeSaleRef.current();
+        } else if (lastReceipt) {
+          e.preventDefault();
+          setLastReceipt(null);
+          focusSearchOnDesktop();
+        } else if (cart.length > 0 && !hasOpenModal && !submitting) {
           e.preventDefault();
           exactCashCheckoutRef.current();
         }
@@ -5321,7 +5441,7 @@ export default function PosPage() {
         e.preventDefault();
         if (checkoutOpen && !customerDisplayOpen) {
           selectPaymentMethod('qr');
-        } else if (cart.length > 0 && !customerDisplayOpen) {
+        } else if (cart.length > 0 && !hasOpenModal) {
           openCheckout();
         }
       } else if (e.key === 'F10') {
@@ -6397,27 +6517,41 @@ export default function PosPage() {
 
   const handleCompleteSale = async () => {
     if (cart.length === 0) return;
+    setCheckoutError('');
+
+    const expiredInCart = cart.filter((item) => {
+      if (!item.product_id) return false;
+      const info = getProductExpiryInfo(expiryDates[item.product_id], todayIso);
+      return info?.status === 'expired';
+    });
+    if (expiredInCart.length > 0 && !expiredConfirmPending) {
+      setExpiredConfirmPending(true);
+      return;
+    }
 
     if (selectedCustomerId === '__new__' && !newCustName.trim()) {
-      showToast(
-        'error',
+      const msg =
         paymentMethod === 'credit'
           ? 'กรุณากรอกชื่อลูกค้าเงินเชื่อ'
-          : 'กรุณากรอกชื่อลูกค้า'
-      );
+          : 'กรุณากรอกชื่อลูกค้า';
+      setCheckoutError(msg);
+      showToast('error', msg);
       return;
     }
 
     if (paymentMethod === 'credit' && !selectedCustomerId) {
-      showToast('error', 'กรุณาเลือกลูกค้าเงินเชื่อ');
+      const msg = 'กรุณาเลือกลูกค้าเงินเชื่อก่อนบันทึกบิล';
+      setCheckoutError(msg);
+      setShowCheckoutCustomerSection(true);
+      showToast('error', msg);
       return;
     }
 
     if (paymentMethod === 'credit' && isCreditDownPaymentInvalid) {
-      showToast(
-        'error',
-        'ยอดจ่ายสดบางส่วนต้องน้อยกว่ายอดรวมสุทธิ (หากจ่ายครบ กรุณาเลือกวิธีชำระเงินสด)'
-      );
+      const msg =
+        'ยอดจ่ายสดบางส่วนต้องน้อยกว่ายอดรวมสุทธิ (หากจ่ายครบ กรุณาเลือกวิธีชำระเงินสด)';
+      setCheckoutError(msg);
+      showToast('error', msg);
       return;
     }
 
@@ -6444,7 +6578,9 @@ export default function PosPage() {
       !isSplitCashQr &&
       received < effectiveTotalToCollect
     ) {
-      showToast('error', 'จำนวนเงินที่รับมาน้อยกว่ายอดสุทธิที่ต้องชำระ');
+      const msg = 'จำนวนเงินที่รับมาน้อยกว่ายอดสุทธิที่ต้องชำระ';
+      setCheckoutError(msg);
+      showToast('error', msg);
       return;
     }
 
@@ -6458,7 +6594,9 @@ export default function PosPage() {
         .select()
         .single();
       if (custErr || !newCust) {
-        showToast('error', 'เพิ่มลูกค้าไม่สำเร็จ');
+        const msg = 'เพิ่มลูกค้าไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+        setCheckoutError(msg);
+        showToast('error', msg);
         return;
       }
       customerId = newCust.id;
@@ -6751,9 +6889,12 @@ export default function PosPage() {
 
     if (error) {
       setSubmitting(false);
+      setCheckoutError(`บันทึกการขายไม่สำเร็จ (${error.message}) — กรุณาตรวจสอบการเชื่อมต่อแล้วกดลองใหม่`);
       showToast('error', 'บันทึกการขายไม่สำเร็จ: ' + error.message);
       return;
     }
+    setCheckoutError('');
+    setExpiredConfirmPending(false);
 
     let recordedCreditDownPayment = 0;
     let recordedCreditRemainingDebt = 0;
@@ -7007,8 +7148,24 @@ export default function PosPage() {
     loadData();
   };
 
+  const completeSaleRef = useRef<() => void>(() => {});
+  completeSaleRef.current = () => {
+    void handleCompleteSale();
+  };
+
   const handleExactCashCheckout = async () => {
     if (cart.length === 0 || submitting) return;
+
+    const hasExpiredInCart = cart.some((item) => {
+      if (!item.product_id) return false;
+      const info = getProductExpiryInfo(expiryDates[item.product_id], todayIso);
+      return info?.status === 'expired';
+    });
+    if (hasExpiredInCart) {
+      openCheckout();
+      setExpiredConfirmPending(true);
+      return;
+    }
 
     const itemsPayload = cart.map((item) => ({
       product_id: item.product_id ?? '',
@@ -7361,7 +7518,7 @@ export default function PosPage() {
                       />
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">
+                      <p className="text-sm font-semibold text-slate-900 line-clamp-2 leading-snug">
                         {item.product_name}
                       </p>
                     {editingPriceKey === item.key ? (
@@ -7514,6 +7671,7 @@ export default function PosPage() {
               <div className="flex items-center justify-between gap-2">
                 {item.available_units && item.available_units.length > 1 ? (
                   <select
+                    aria-label={`เลือกหน่วยขาย ${item.product_name}`}
                     value={
                       item.available_units.find((u) => u.unit_name === item.unit_name)?.id ?? ''
                     }
@@ -7731,7 +7889,7 @@ export default function PosPage() {
         )}
       </div>
 
-      <div className="border-t border-slate-200 p-3 sm:p-4 bg-slate-50 space-y-2.5">
+      <div className="border-t border-slate-200 p-3 sm:p-4 bg-slate-50 space-y-2">
         <div className="space-y-1.5">
           <input
             type="search"
@@ -7739,7 +7897,7 @@ export default function PosPage() {
             onChange={(e) => setCustomerSearchQuery(e.target.value)}
             placeholder="ค้นหาชื่อหรือเบอร์โทรลูกค้า..."
             aria-label="ค้นหาชื่อลูกค้าในตะกร้า"
-            className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm focus:border-emerald-500 focus:outline-none"
+            className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs focus:border-emerald-500 focus:outline-none"
           />
           <div className="flex items-center gap-1.5">
             <UserCheck className="h-4 w-4 text-slate-500 shrink-0" />
@@ -7755,8 +7913,8 @@ export default function PosPage() {
                 const dueInfo = getCustomerDueInfo(dueDates[c.id], todayIso, c.total_debt);
                 return (
                   <option key={c.id} value={c.id}>
-                    {c.name} (🏆 {formatNumber(loyaltyPoints[c.id] ?? 0)} แต้ม
-                    {vipPct > 0 ? ` | 👑 VIP ลด ${formatNumber(vipPct)}%` : ''}
+                    {c.name} ({formatNumber(loyaltyPoints[c.id] ?? 0)} แต้ม
+                    {vipPct > 0 ? `, VIP ลด ${formatNumber(vipPct)}%` : ''}
                     {getCustomerDueSelectLabel(dueInfo)})
                   </option>
                 );
@@ -7778,67 +7936,23 @@ export default function PosPage() {
               </p>
             )}
           {selectedCustomer && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-2.5 py-1.5 text-xs space-y-1">
+            <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-2.5 py-1.5 text-xs">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                   <span className="font-semibold text-amber-900 truncate">
                     {selectedCustomer.name}
                   </span>
-                  {selectedCustomerTag && (
-                    <span
-                      title={`กลุ่มลูกค้า: ${selectedCustomerTag}`}
-                      className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-purple-300 bg-purple-50 px-1.5 py-0.5 text-[11px] font-semibold text-purple-800 truncate"
-                    >
-                      🏷️ {selectedCustomerTag}
-                    </span>
-                  )}
-                  {selectedCustomerContactNote && (
-                    <span
-                      title={`ที่อยู่ / ช่องทางติดต่อ: ${selectedCustomerContactNote}`}
-                      className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-teal-300 bg-teal-50 px-1.5 py-0.5 text-[11px] font-semibold text-teal-800 truncate"
-                    >
-                      🏠 {selectedCustomerContactNote}
-                    </span>
-                  )}
-                  {selectedCustomerPaydayCycle && (
-                    <span
-                      title={`รอบจ่ายเงินประจำ: ${selectedCustomerPaydayCycle}`}
-                      className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-sky-300 bg-sky-50 px-1.5 py-0.5 text-[11px] font-semibold text-sky-800 truncate"
-                    >
-                      🗓️ รอบจ่าย: {selectedCustomerPaydayCycle}
-                    </span>
-                  )}
                   {selectedCustomerVipPct > 0 && (
-                    <span
-                      title={`ส่วนลดประจำตัวลูกค้า VIP ${formatNumber(selectedCustomerVipPct)}%`}
-                      className="inline-flex items-center gap-0.5 rounded-full border border-violet-300 bg-violet-100 px-1.5 py-0.5 text-[11px] font-bold text-violet-800 whitespace-nowrap shrink-0 tabular-nums"
-                    >
-                      👑 VIP ลด {formatNumber(selectedCustomerVipPct)}%
+                    <span className="inline-flex items-center rounded-full border border-violet-300 bg-violet-100 px-1.5 py-0.5 text-[11px] font-bold text-violet-800 whitespace-nowrap shrink-0 tabular-nums">
+                      VIP -{formatNumber(selectedCustomerVipPct)}%
                     </span>
                   )}
-                  {selectedCustomerStoreCredit > 0 && (
-                    <span
-                      title={`เงินฝากทอนคงเหลือ ${formatBaht(selectedCustomerStoreCredit)}`}
-                      className="inline-flex items-center gap-0.5 rounded-full border border-teal-300 bg-teal-100 px-1.5 py-0.5 text-[11px] font-bold text-teal-800 whitespace-nowrap shrink-0 tabular-nums"
-                    >
-                      💰 เงินฝากทอน: {formatBaht(selectedCustomerStoreCredit)}
-                    </span>
-                  )}
-                  {renderCustomerCreditHealthBadge(selectedCustomerCreditHealth, true)}
                   {renderCustomerDueBadge(selectedCustomerDueInfo, selectedCustomer.total_debt, true)}
                 </div>
                 <span className="font-bold text-amber-700 tabular-nums shrink-0">
-                  🏆 {formatNumber(selectedCustomerPoints)} แต้ม
+                  {formatNumber(selectedCustomerPoints)} แต้ม
                 </span>
               </div>
-              {selectedCustomerLatestFollowup && (
-                <p
-                  title={`ติดตามล่าสุด: ${selectedCustomerLatestFollowup.text}`}
-                  className="rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-800 truncate"
-                >
-                  📝 ติดตามล่าสุด: {selectedCustomerLatestFollowup.text}
-                </p>
-              )}
             </div>
           )}
         </div>
@@ -7857,21 +7971,23 @@ export default function PosPage() {
             )}
           </div>
         )}
-        <div className="space-y-1.5">
-          <p className="text-[11px] font-semibold text-slate-500">บริการเสริมด่วน</p>
-          <div className="flex flex-wrap gap-1.5">
-            {QUICK_SERVICE_FEES.map((fee) => (
-              <button
-                key={fee.id}
-                type="button"
-                onClick={() => handleAddQuickServiceFee(fee)}
-                className="rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-800 hover:bg-sky-100 transition-colors whitespace-nowrap"
-              >
-                {fee.label}
-              </button>
-            ))}
+        {showMoreCartTools && (
+          <div className="space-y-1.5 pt-1 border-t border-slate-200/70">
+            <p className="text-[11px] font-semibold text-slate-500">บริการเสริมด่วน</p>
+            <div className="flex flex-wrap gap-1.5">
+              {QUICK_SERVICE_FEES.map((fee) => (
+                <button
+                  key={fee.id}
+                  type="button"
+                  onClick={() => handleAddQuickServiceFee(fee)}
+                  className="rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-800 hover:bg-sky-100 transition-colors whitespace-nowrap"
+                >
+                  {fee.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-slate-600">ยอดรวมสุทธิ</span>
@@ -7900,7 +8016,7 @@ export default function PosPage() {
             >
               <PauseCircle className="h-4 w-4" />
               <span>พักบิล</span>
-              <kbd className="hidden sm:inline-block rounded bg-amber-200/80 border border-amber-300 px-1 py-0.5 text-[11px] font-semibold text-amber-900">
+              <kbd aria-hidden="true" className="hidden sm:inline-block rounded bg-amber-200/80 border border-amber-300 px-1 py-0.5 text-[11px] font-semibold text-amber-900">
                 F4
               </kbd>
             </button>
@@ -7914,7 +8030,7 @@ export default function PosPage() {
           >
             <Banknote className="h-4 w-4" />
             <span>สดพอดี</span>
-            <kbd className="hidden sm:inline-block rounded bg-emerald-200/80 border border-emerald-300 px-1 py-0.5 text-[11px] font-semibold text-emerald-900">
+            <kbd aria-hidden="true" className="hidden sm:inline-block rounded bg-emerald-200/80 border border-emerald-300 px-1 py-0.5 text-[11px] font-semibold text-emerald-900">
               Ctrl+↵
             </kbd>
           </button>
@@ -7925,7 +8041,7 @@ export default function PosPage() {
             className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-3.5 px-3 text-sm sm:text-base font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
             <span>ชำระเงิน ({formatBaht(discountAmount > 0 ? finalTotal : cartTotal)})</span>
-            <kbd className="hidden sm:inline-block rounded bg-emerald-700/80 border border-emerald-400/40 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-100">
+            <kbd aria-hidden="true" className="hidden sm:inline-block rounded bg-emerald-700/80 border border-emerald-400/40 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-100">
               F9
             </kbd>
           </button>
@@ -7945,6 +8061,8 @@ export default function PosPage() {
           className={`fixed top-14 md:top-4 right-4 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg ${
             toast.type === 'success'
               ? 'bg-emerald-600 text-white'
+              : toast.type === 'warning'
+              ? 'bg-amber-600 text-white'
               : 'bg-rose-600 text-white'
           }`}
         >
@@ -8026,6 +8144,7 @@ export default function PosPage() {
             </div>
           )}
           {/* Top Bar */}
+          <h1 className="sr-only">จุดขายหน้าร้าน (POS)</h1>
           <div className="bg-white border-b border-slate-200 p-3 sm:p-4 space-y-3 shrink-0">
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative flex-1 min-w-[200px]">
@@ -8037,6 +8156,7 @@ export default function PosPage() {
                   onChange={(e) => {
                     const next = e.target.value;
                     setSearch(next);
+                    setHighlightedProductIndex(-1);
                     if (next === '') {
                       focusSearchOnDesktop();
                     }
@@ -8102,6 +8222,18 @@ export default function PosPage() {
                   </button>
                 )
               )}
+              <button
+                type="button"
+                onClick={() => setShortcutsOpen(true)}
+                title="ดูคู่มือคีย์ลัดทั้งหมด (F1)"
+                aria-label="ดูคู่มือคีย์ลัดทั้งหมด (F1)"
+                className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors shrink-0"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <kbd aria-hidden="true" className="hidden sm:inline text-[11px] font-bold">
+                  F1
+                </kbd>
+              </button>
               <button
                 type="button"
                 onClick={() => setShowMorePosTools((prev) => !prev)}
@@ -8247,15 +8379,6 @@ export default function PosPage() {
                     >
                       <Settings className="h-4 w-4 text-slate-600" />
                       <span>ตั้งค่าร้าน / ใบเสร็จ</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShortcutsOpen(true)}
-                      title="คู่มือคีย์ลัดแป้นพิมพ์ (F1)"
-                      className="flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
-                    >
-                      <HelpCircle className="h-4 w-4 text-emerald-600" />
-                      <span>? คีย์ลัด (F1)</span>
                     </button>
                     <button
                       type="button"
@@ -8518,12 +8641,15 @@ export default function PosPage() {
                     : 'grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3'
                 }
               >
-                {filteredProducts.map((product) => {
+                {filteredProducts.map((product, idx) => {
                   const units = product.product_units ?? [];
                   const defaultUnit =
                     units.find((u) => u.is_default) ?? units[0];
+                  const isOutOfStock =
+                    !product.allow_custom_price && product.stock_qty <= 0;
                   const isLow =
                     !product.allow_custom_price &&
+                    product.stock_qty > 0 &&
                     product.stock_qty <= product.low_stock_alert;
                   const isOutOrLowStock =
                     !product.allow_custom_price &&
@@ -8531,6 +8657,7 @@ export default function PosPage() {
                       product.stock_qty <= product.low_stock_alert);
                   const isCompact = gridDensity === 'compact';
                   const isPinned = pinnedIdSet.has(product.id);
+                  const isKeyboardHighlighted = highlightedProductIndex === idx;
                   const shelfLocation = shelfLocations[product.id];
                   const promoLabel = promoLabels[product.id];
                   const substituteNote = isOutOrLowStock
@@ -8548,11 +8675,18 @@ export default function PosPage() {
                       ? expiryInfo
                       : null;
 
+                  const hasExtraDetails = Boolean(
+                    shelfLocation || wholesaleTier || substituteNote || promoLabel || expiryWarning
+                  );
+                  const isInfoExpanded = activeProductInfoId === product.id;
+
                   return (
                     <div
                       key={product.id}
                       className={`cv-auto-card group relative flex flex-col justify-between bg-white border shadow-xs hover:border-emerald-400 hover:shadow-md transition-all text-left ${
-                        isPinned
+                        isKeyboardHighlighted
+                          ? 'ring-2 ring-emerald-500 border-emerald-500'
+                          : isPinned
                           ? 'border-amber-300 bg-amber-50/30'
                           : 'border-slate-200'
                       } ${isCompact ? 'rounded-xl p-2.5' : 'rounded-2xl p-3.5'}`}
@@ -8572,12 +8706,12 @@ export default function PosPage() {
                         title={
                           isPinned ? 'เลิกปักหมุดสินค้าด่วน' : 'ปักหมุดสินค้าด่วน'
                         }
-                        className={`absolute z-10 min-h-10 min-w-10 flex items-center justify-center rounded-lg p-1.5 transition-colors ${
+                        className={`absolute z-10 min-h-9 min-w-9 flex items-center justify-center rounded-lg p-1.5 transition-colors ${
                           isCompact ? 'top-1 right-1' : 'top-1.5 right-1.5'
                         } ${
                           isPinned
                             ? 'text-amber-500 hover:bg-amber-100'
-                            : 'text-slate-500 opacity-75 group-hover:opacity-100 hover:text-amber-500 hover:bg-slate-100'
+                            : 'text-slate-400 opacity-70 group-hover:opacity-100 hover:text-amber-500 hover:bg-slate-100'
                         }`}
                       >
                         <Star
@@ -8593,7 +8727,7 @@ export default function PosPage() {
                         className="text-left w-full flex-1 flex flex-col justify-between"
                       >
                         <div>
-                          <div className="flex items-start justify-between gap-1 pr-6">
+                          <div className="flex items-start justify-between gap-1 pr-7">
                             <span
                               className={`font-bold text-slate-900 line-clamp-2 leading-snug ${
                                 isCompact ? 'text-xs' : 'text-sm'
@@ -8647,10 +8781,10 @@ export default function PosPage() {
                               key={u.id}
                               type="button"
                               onClick={() => addProductToCart(product, u)}
-                              className={`rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 font-medium text-slate-700 transition-colors min-h-10 ${
+                              className={`rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 font-medium text-slate-700 transition-colors min-h-9 ${
                                 isCompact
-                                  ? 'px-2.5 py-1.5 text-[11px]'
-                                  : 'px-2.5 py-1.5 text-xs'
+                                  ? 'px-2 py-1 text-[11px]'
+                                  : 'px-2.5 py-1 text-xs'
                               }`}
                             >
                               {u.unit_name} {formatBaht(u.selling_price)}
@@ -8659,47 +8793,82 @@ export default function PosPage() {
                         </div>
                       )}
 
-                      {(promoLabel || wholesaleTier || (!isCompact && shelfLocation) || isLow || expiryWarning || (!isCompact && substituteNote)) && (
+                      {/* Quiet status row: max 1 critical badge at rest + on-demand details toggle */}
+                      {(expiryWarning || isOutOfStock || promoLabel || isLow || hasExtraDetails) && (
                         <div
-                          className={`flex flex-wrap items-center gap-1 ${
+                          className={`flex items-center justify-between gap-1 ${
                             isCompact ? 'mt-1.5' : 'mt-2'
                           }`}
                         >
-                          {promoLabel && (
-                            <span
-                              title={`ป้ายโปรโมชั่น: ${promoLabel}`}
-                              className="inline-flex items-center gap-1 rounded-md bg-orange-600 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-2xs max-w-full"
-                            >
-                              <Tag className="h-2.5 w-2.5 shrink-0" />
-                              <span className="truncate">{promoLabel}</span>
-                            </span>
-                          )}
-                          {wholesaleTier && (
-                            <span
-                              title={`ซื้อครบ ${formatNumber(wholesaleTier.minQty)} ${product.base_unit} ขึ้นไป ราคาส่ง ฿${formatNumber(wholesaleTier.unitPrice)}/${product.base_unit}`}
-                              className="inline-flex items-center gap-0.5 rounded-md border border-teal-200 bg-teal-50 px-1.5 py-0.5 text-[11px] font-bold text-teal-800 tabular-nums"
-                            >
-                              <span>
-                                ราคาส่ง ≥{formatNumber(wholesaleTier.minQty)} ชิ้น ฿
-                                {formatNumber(wholesaleTier.unitPrice)}
+                          <div className="min-w-0 flex items-center gap-1">
+                            {expiryWarning?.status === 'expired' ? (
+                              <span
+                                title={`หมดอายุแล้ว (${expiryWarning.formattedDate})`}
+                                className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-100 px-1.5 py-0.5 text-[11px] font-semibold text-red-700"
+                              >
+                                <CalendarClock className="h-3 w-3 shrink-0" />
+                                <span>หมดอายุแล้ว</span>
                               </span>
-                            </span>
-                          )}
-                          {!isCompact && shelfLocation && (
-                            <span
-                              title={`ตำแหน่งชั้นวาง: ${shelfLocation}`}
-                              className="inline-flex items-center gap-0.5 rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[11px] font-semibold text-indigo-700 max-w-full"
+                            ) : isOutOfStock ? (
+                              <span className="inline-block rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[11px] font-semibold text-rose-700">
+                                หมดสต็อก
+                              </span>
+                            ) : expiryWarning?.status === 'expiring_soon' ? (
+                              <span
+                                title={`ใกล้หมดอายุ (${expiryWarning.formattedDate})`}
+                                className="inline-flex items-center gap-1 rounded-md border border-orange-200 bg-orange-100 px-1.5 py-0.5 text-[11px] font-semibold text-orange-800"
+                              >
+                                <CalendarClock className="h-3 w-3 shrink-0" />
+                                <span>
+                                  ใกล้หมดอายุ ({expiryWarning.daysRemaining === 0 ? 'วันนี้' : `${expiryWarning.daysRemaining} วัน`})
+                                </span>
+                              </span>
+                            ) : promoLabel ? (
+                              <span
+                                title={`โปรโมชั่น: ${promoLabel}`}
+                                className="inline-flex items-center gap-1 rounded-md bg-orange-600 px-1.5 py-0.5 text-[11px] font-bold text-white max-w-full"
+                              >
+                                <Tag className="h-2.5 w-2.5 shrink-0" />
+                                <span className="truncate">{promoLabel}</span>
+                              </span>
+                            ) : isLow ? (
+                              <span className="inline-block rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                                ใกล้หมด
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {!isCompact && hasExtraDetails && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveProductInfoId((prev) =>
+                                  prev === product.id ? null : product.id
+                                );
+                              }}
+                              aria-expanded={isInfoExpanded}
+                              className="shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
                             >
-                              <span aria-hidden="true">📍</span>
-                              <span className="truncate">{shelfLocation}</span>
+                              {isInfoExpanded ? 'ซ่อนข้อมูล' : 'ข้อมูลเพิ่ม'}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {!isCompact && isInfoExpanded && hasExtraDetails && (
+                        <div className="mt-1.5 pt-1.5 border-t border-slate-100 flex flex-wrap gap-1 text-[11px]">
+                          {wholesaleTier && (
+                            <span className="inline-flex items-center rounded-md border border-teal-200 bg-teal-50 px-1.5 py-0.5 font-semibold text-teal-800 tabular-nums">
+                              ราคาส่ง ≥{formatNumber(wholesaleTier.minQty)} ชิ้น ฿{formatNumber(wholesaleTier.unitPrice)}
                             </span>
                           )}
-                          {isLow && (
-                            <span className="inline-block rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
-                              ใกล้หมด
+                          {shelfLocation && (
+                            <span className="inline-flex items-center rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 font-semibold text-indigo-700">
+                              ชั้น: {shelfLocation}
                             </span>
                           )}
-                          {!isCompact && substituteNote && (
+                          {substituteNote && (
                             <button
                               type="button"
                               onClick={(e) => {
@@ -8707,41 +8876,11 @@ export default function PosPage() {
                                 setSearch(substituteNote);
                                 focusSearchOnDesktop();
                               }}
-                              title={`กดเพื่อค้นหาสินค้าทดแทน: ${substituteNote}`}
-                              className="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[11px] font-semibold text-sky-800 hover:bg-sky-100 transition-colors max-w-full text-left"
+                              className="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-1.5 py-0.5 font-semibold text-sky-800 hover:bg-sky-100 transition-colors"
                             >
                               <Search className="h-3 w-3 shrink-0" />
-                              <span className="truncate">ทดแทน: {substituteNote}</span>
+                              <span>ทดแทน: {substituteNote}</span>
                             </button>
-                          )}
-                          {expiryWarning && (
-                            <span
-                              title={`วันหมดอายุล็อตใกล้สุด: ${expiryWarning.formattedDate} — กรุณาตรวจเช็กก่อนส่งมอบ`}
-                              className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-semibold ${
-                                expiryWarning.status === 'expired'
-                                  ? 'border-red-200 bg-red-100 text-red-700'
-                                  : 'border-orange-200 bg-orange-100 text-orange-800'
-                              }`}
-                            >
-                              <CalendarClock className="h-3 w-3 shrink-0" />
-                              <span>
-                                {expiryWarning.status === 'expired'
-                                  ? isCompact
-                                    ? 'หมดอายุแล้ว'
-                                    : `หมดอายุแล้ว (${expiryWarning.formattedDate})`
-                                  : isCompact
-                                    ? `ใกล้หมดอายุ (${
-                                        expiryWarning.daysRemaining === 0
-                                          ? 'วันนี้'
-                                          : `${expiryWarning.daysRemaining} วัน`
-                                      })`
-                                    : `ใกล้หมดอายุ (${
-                                        expiryWarning.daysRemaining === 0
-                                          ? 'วันนี้'
-                                          : `อีก ${expiryWarning.daysRemaining} วัน`
-                                      })`}
-                              </span>
-                            </span>
                           )}
                         </div>
                       )}
@@ -8761,7 +8900,7 @@ export default function PosPage() {
 
       {/* Mobile Floating Cart Bar */}
       {cart.length > 0 && (
-        <div className="lg:hidden fixed bottom-16 inset-x-3 z-30">
+        <div className="lg:hidden fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] inset-x-3 z-30">
           <button
             type="button"
             onClick={() => setMobileCartOpen(true)}
@@ -8798,10 +8937,14 @@ export default function PosPage() {
       >
         <form onSubmit={handleConfirmCustomPrice} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="custom-price-input"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
               ระบุราคาขาย (บาท)
             </label>
             <input
+              id="custom-price-input"
               type="number"
               step="0.5"
               min="0.5"
@@ -9054,10 +9197,14 @@ export default function PosPage() {
       >
         <form onSubmit={handleConfirmAdHoc} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="adhoc-name-input"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
               ชื่อรายการ
             </label>
             <input
+              id="adhoc-name-input"
               type="text"
               required
               value={adHocName}
@@ -9066,10 +9213,14 @@ export default function PosPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="adhoc-price-input"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
               ราคา (บาท)
             </label>
             <input
+              id="adhoc-price-input"
               type="number"
               step="0.01"
               min="0.01"
@@ -9099,7 +9250,7 @@ export default function PosPage() {
       >
         <div className="space-y-3">
           <div className="rounded-2xl bg-slate-900 px-4 py-3.5 text-right text-white shadow-inner">
-            <div className="min-h-[1.125rem] text-xs font-medium text-slate-500 tabular-nums truncate">
+            <div className="min-h-[1.125rem] text-xs font-medium text-slate-300 tabular-nums truncate">
               {calcExpression || '\u00A0'}
             </div>
             <div className="mt-1 text-3xl font-bold tabular-nums tracking-tight truncate">
@@ -9249,12 +9400,43 @@ export default function PosPage() {
         maxWidthClass="max-w-2xl"
       >
         <div className="space-y-4">
-          {/* Customer / Member & Loyalty Points */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-2.5">
+          {/* Customer / Member & Loyalty Points (progressive disclosure) */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <UserCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span className="text-xs font-bold text-slate-700 truncate">
+                  {selectedCustomer
+                    ? `ลูกค้า: ${selectedCustomer.name}`
+                    : selectedCustomerId === '__new__'
+                    ? 'เพิ่มลูกค้าใหม่ด่วน'
+                    : 'ลูกค้า: ลูกค้าทั่วไป'}
+                </span>
+                {selectedCustomer && selectedCustomerPoints > 0 && (
+                  <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-bold text-amber-800 tabular-nums shrink-0">
+                    {formatNumber(selectedCustomerPoints)} แต้ม
+                  </span>
+                )}
+                {paymentMethod === 'credit' && !selectedCustomerId && (
+                  <span className="text-[11px] font-bold text-rose-600 shrink-0">*จำเป็น</span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCheckoutCustomerSection((v) => !v)}
+                aria-expanded={showCheckoutCustomerSection || (paymentMethod === 'credit' && !selectedCustomerId)}
+                className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                {showCheckoutCustomerSection || (paymentMethod === 'credit' && !selectedCustomerId)
+                  ? 'ซ่อน'
+                  : 'เปลี่ยน / ใช้แต้ม'}
+              </button>
+            </div>
+            {(showCheckoutCustomerSection || (paymentMethod === 'credit' && !selectedCustomerId)) && (
+              <div className="space-y-2.5 pt-1 border-t border-slate-200/70">
             <div className="flex items-center justify-between gap-2">
               <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                <UserCheck className="h-4 w-4 text-emerald-600" />
-                <span>ลูกค้า / สมาชิกสะสมแต้ม</span>
+                <span>เลือกลูกค้า / สมาชิกสะสมแต้ม</span>
                 {paymentMethod === 'credit' && (
                   <span className="text-rose-600">*จำเป็นสำหรับเงินเชื่อ</span>
                 )}
@@ -9302,9 +9484,9 @@ export default function PosPage() {
                   const dueInfo = getCustomerDueInfo(dueDates[c.id], todayIso, c.total_debt);
                   return (
                     <option key={c.id} value={c.id}>
-                      {c.name} (🏆 {formatNumber(loyaltyPoints[c.id] ?? 0)} แต้ม
-                      {vipPct > 0 ? ` | 👑 VIP ลด ${formatNumber(vipPct)}%` : ''}
-                      {c.total_debt > 0 ? ` | ค้าง ${formatBaht(c.total_debt)}` : ''}
+                      {c.name} ({formatNumber(loyaltyPoints[c.id] ?? 0)} แต้ม
+                      {vipPct > 0 ? `, VIP ลด ${formatNumber(vipPct)}%` : ''}
+                      {c.total_debt > 0 ? `, ค้าง ${formatBaht(c.total_debt)}` : ''}
                       {getCustomerDueSelectLabel(dueInfo)})
                     </option>
                   );
@@ -9522,14 +9704,41 @@ export default function PosPage() {
                 )}
               </div>
             )}
+              </div>
+            )}
           </div>
 
-          {/* Bill Discount Input */}
-          <div className="rounded-xl bg-amber-50/60 border border-amber-200 p-3.5 space-y-2.5">
+          {/* Bill Discount Input (progressive disclosure) */}
+          <div className="rounded-xl bg-amber-50/60 border border-amber-200 p-3 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                <Tag className="h-4 w-4 text-amber-600 shrink-0" />
+                <span className="text-xs font-bold text-amber-900">
+                  ส่วนลดท้ายบิล: {discountAmount > 0 ? `-${formatBaht(discountAmount)}` : 'ไม่มี'}
+                </span>
+                {appliedVipPct > 0 && (
+                  <span className="rounded-md bg-violet-100 border border-violet-200 px-1.5 py-0.5 text-[11px] font-bold text-violet-800 tabular-nums">
+                    VIP {formatNumber(appliedVipPct)}%
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCheckoutDiscountSection((v) => !v)}
+                aria-expanded={showCheckoutDiscountSection || discountAmount > 0}
+                className="shrink-0 rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100 transition-colors"
+              >
+                {showCheckoutDiscountSection || discountAmount > 0 ? 'ซ่อน' : 'ใส่ส่วนลด / VIP'}
+              </button>
+            </div>
+            {(showCheckoutDiscountSection || discountAmount > 0) && (
+              <div className="space-y-2.5 pt-1 border-t border-amber-200/70">
             <div className="flex items-center justify-between gap-3">
-              <label className="flex flex-wrap items-center gap-1.5 text-xs font-bold text-amber-900">
-                <Tag className="h-4 w-4 text-amber-600" />
-                <span>ส่วนลดท้ายบิล (บาท)</span>
+              <label
+                htmlFor="checkout-bill-discount"
+                className="flex flex-wrap items-center gap-1.5 text-xs font-bold text-amber-900"
+              >
+                <span>จำนวนส่วนลด (บาท)</span>
                 {pointsToRedeem > 0 && (
                   <span className="rounded-md bg-amber-200/80 px-1.5 py-0.5 text-[11px] font-bold text-amber-900 tabular-nums">
                     ใช้ {formatNumber(pointsToRedeem)} แต้ม
@@ -9547,6 +9756,7 @@ export default function PosPage() {
                 )}
               </label>
               <input
+                id="checkout-bill-discount"
                 type="number"
                 min={0}
                 max={cartTotal}
@@ -9614,7 +9824,7 @@ export default function PosPage() {
               </div>
             )}
             <div className="flex flex-wrap items-center gap-1.5">
-              {[0, 2, 5, 10, 20].map((disc) => (
+              {[0, 5].map((disc) => (
                 <button
                   key={disc}
                   type="button"
@@ -9628,13 +9838,11 @@ export default function PosPage() {
                   {disc === 0 ? 'ไม่ลด' : `ลด ${disc}฿`}
                 </button>
               ))}
-              {[5, 10, 15].map((pct) => {
-                const pctDiscount = Number(((cartTotal * pct) / 100).toFixed(2));
-                const isActive =
-                  pctDiscount > 0 && (Number(billDiscount) || 0) === pctDiscount;
+              {(() => {
+                const pctDiscount = Number(((cartTotal * 10) / 100).toFixed(2));
+                const isActive = pctDiscount > 0 && (Number(billDiscount) || 0) === pctDiscount;
                 return (
                   <button
-                    key={`pct-${pct}`}
                     type="button"
                     onClick={() =>
                       handleDiscountChange(pctDiscount === 0 ? '' : String(pctDiscount))
@@ -9645,11 +9853,11 @@ export default function PosPage() {
                         : 'bg-white border border-amber-200 text-amber-800 hover:bg-amber-100'
                     }`}
                   >
-                    ลด {pct}%
+                    ลด 10%
                   </button>
                 );
-              })}
-              {roundDownOptions.map((option) => {
+              })()}
+              {roundDownOptions.slice(0, 1).map((option) => {
                 const isActive =
                   pointsToRedeem === 0 &&
                   !vipDiscountApplied &&
@@ -9666,12 +9874,82 @@ export default function PosPage() {
                         : 'bg-white border border-amber-200 text-amber-800 hover:bg-amber-100'
                     }`}
                   >
-                    ปัดเศษลงเหลือ ฿{formatNumber(option.target)} (-฿
-                    {formatNumber(option.discount)})
+                    ปัดเศษเหลือ ฿{formatNumber(option.target)}
                   </button>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => setShowMoreDiscountPresets((v) => !v)}
+                aria-expanded={showMoreDiscountPresets}
+                className="rounded-lg border border-amber-200 bg-white px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
+              >
+                {showMoreDiscountPresets ? 'ย่อตัวเลือก' : 'เพิ่มเติม...'}
+              </button>
+              {showMoreDiscountPresets && (
+                <>
+                  {[2, 10, 20].map((disc) => (
+                    <button
+                      key={disc}
+                      type="button"
+                      onClick={() => handleDiscountChange(String(disc))}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                        (Number(billDiscount) || 0) === disc
+                          ? 'bg-amber-600 text-white'
+                          : 'bg-white border border-amber-200 text-amber-800 hover:bg-amber-100'
+                      }`}
+                    >
+                      ลด {disc}฿
+                    </button>
+                  ))}
+                  {[5, 15].map((pct) => {
+                    const pctDiscount = Number(((cartTotal * pct) / 100).toFixed(2));
+                    const isActive =
+                      pctDiscount > 0 && (Number(billDiscount) || 0) === pctDiscount;
+                    return (
+                      <button
+                        key={`pct-${pct}`}
+                        type="button"
+                        onClick={() =>
+                          handleDiscountChange(pctDiscount === 0 ? '' : String(pctDiscount))
+                        }
+                        className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                          isActive
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-white border border-amber-200 text-amber-800 hover:bg-amber-100'
+                        }`}
+                      >
+                        ลด {pct}%
+                      </button>
+                    );
+                  })}
+                  {roundDownOptions.slice(1).map((option) => {
+                    const isActive =
+                      pointsToRedeem === 0 &&
+                      !vipDiscountApplied &&
+                      (Number(billDiscount) || 0) === option.discount;
+                    return (
+                      <button
+                        key={`round-${option.target}`}
+                        type="button"
+                        onClick={() => handleDiscountChange(String(option.discount))}
+                        title={`ปัดเศษลงเหลือ ฿${formatNumber(option.target)} (ส่วนลด ฿${formatNumber(option.discount)})`}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors tabular-nums ${
+                          isActive
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-white border border-amber-200 text-amber-800 hover:bg-amber-100'
+                        }`}
+                      >
+                        ปัดเศษเหลือ ฿{formatNumber(option.target)} (-฿
+                        {formatNumber(option.discount)})
+                      </button>
+                    );
+                  })}
+                </>
+              )}
             </div>
+              </div>
+            )}
           </div>
 
           {/* Net Total Box */}
@@ -9716,6 +9994,7 @@ export default function PosPage() {
               }`}
             >
               <kbd
+                aria-hidden="true"
                 className={`absolute top-1.5 right-1.5 rounded border px-1 py-0.5 text-[11px] font-bold leading-none ${
                   paymentMethod === 'cash'
                     ? 'border-emerald-300 bg-white text-emerald-700'
@@ -9737,6 +10016,7 @@ export default function PosPage() {
               }`}
             >
               <kbd
+                aria-hidden="true"
                 className={`absolute top-1.5 right-1.5 rounded border px-1 py-0.5 text-[11px] font-bold leading-none ${
                   paymentMethod === 'qr'
                     ? 'border-sky-300 bg-white text-sky-700'
@@ -9758,6 +10038,7 @@ export default function PosPage() {
               }`}
             >
               <kbd
+                aria-hidden="true"
                 className={`absolute top-1.5 right-1.5 rounded border px-1 py-0.5 text-[11px] font-bold leading-none ${
                   paymentMethod === 'credit'
                     ? 'border-amber-300 bg-white text-amber-700'
@@ -9901,10 +10182,15 @@ export default function PosPage() {
           {paymentMethod === 'cash' && (
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label
+                  htmlFor="checkout-cash-received"
+                  className="block text-sm font-medium text-slate-700 mb-1"
+                >
                   รับเงินสดมา (บาท)
                 </label>
                 <input
+                  id="checkout-cash-received"
+                  ref={cashReceivedInputRef}
                   type="number"
                   min={0}
                   step="0.5"
@@ -9913,45 +10199,31 @@ export default function PosPage() {
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-xl font-bold tabular-nums focus:border-emerald-500 focus:outline-none"
                 />
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => updateCashReceived(String(totalToCollectWithDebt))}
-                  className="rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-200"
+                  className="rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-200 tabular-nums"
                 >
                   พอดี ({totalToCollectWithDebt})
                 </button>
-                {[20, 50, 100, 500, 1000].map((bill) => (
-                  <button
-                    key={bill}
-                    type="button"
-                    onClick={() => updateCashReceived(String(bill))}
-                    className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-200"
-                  >
-                    {bill}฿
-                  </button>
-                ))}
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[11px] font-medium text-slate-500 mr-0.5">บวกเพิ่ม:</span>
-                {[20, 50, 100, 500, 1000].map((addAmount) => (
-                  <button
-                    key={addAmount}
-                    type="button"
-                    onClick={() =>
-                      updateCashReceived(
-                        String(Number(((Number(cashReceived) || 0) + addAmount).toFixed(2)))
-                      )
-                    }
-                    className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-2.5 py-1 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition-colors tabular-nums"
-                  >
-                    +{addAmount.toLocaleString('en-US')}
-                  </button>
-                ))}
+                {[20, 50, 100, 500, 1000]
+                  .filter((bill) => bill >= totalToCollectWithDebt || bill >= 100)
+                  .slice(0, 4)
+                  .map((bill) => (
+                    <button
+                      key={bill}
+                      type="button"
+                      onClick={() => updateCashReceived(String(bill))}
+                      className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-200 tabular-nums"
+                    >
+                      {bill}฿
+                    </button>
+                  ))}
                 <button
                   type="button"
                   onClick={() => updateCashReceived('0')}
-                  className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
                 >
                   ล้าง (0)
                 </button>
@@ -10101,11 +10373,15 @@ export default function PosPage() {
               {/* Split Cash + QR Helper */}
               <div className="rounded-xl bg-sky-50/70 border border-sky-200 p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between gap-3">
-                  <label className="flex items-center gap-1.5 text-xs font-bold text-sky-900">
+                  <label
+                    htmlFor="checkout-qr-partial-cash"
+                    className="flex items-center gap-1.5 text-xs font-bold text-sky-900"
+                  >
                     <Banknote className="h-4 w-4 text-sky-600" />
                     <span>จ่ายเงินสดบางส่วน (บาท)</span>
                   </label>
                   <input
+                    id="checkout-qr-partial-cash"
                     type="number"
                     min={0}
                     max={totalToCollectWithDebt}
@@ -10452,39 +10728,123 @@ export default function PosPage() {
             </div>
           )}
 
-          {/* Order Note */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">
-              หมายเหตุบิล (ถ้ามี)
-            </label>
-            <input
-              type="text"
-              value={orderNote}
-              onChange={(e) => setOrderNote(e.target.value)}
-              placeholder="เช่น ฝากหน้าบ้าน, แยกถุง..."
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm bg-white focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
+          {/* Order Note (progressive disclosure) */}
+          {showCheckoutNoteSection || orderNote.trim() !== '' ? (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label
+                  htmlFor="checkout-order-note"
+                  className="block text-xs font-semibold text-slate-600"
+                >
+                  หมายเหตุบิล (ถ้ามี)
+                </label>
+                {orderNote.trim() === '' && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCheckoutNoteSection(false)}
+                    className="text-[11px] font-medium text-slate-500 hover:text-slate-700"
+                  >
+                    ซ่อน
+                  </button>
+                )}
+              </div>
+              <input
+                id="checkout-order-note"
+                type="text"
+                value={orderNote}
+                onChange={(e) => setOrderNote(e.target.value)}
+                placeholder="เช่น ฝากหน้าบ้าน, แยกถุง..."
+                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm bg-white focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowCheckoutNoteSection(true)}
+              className="text-xs font-semibold text-slate-600 hover:text-slate-900 underline underline-offset-2"
+            >
+              + เพิ่มหมายเหตุบิล
+            </button>
+          )}
+
+          {expiredConfirmPending && (
+            <div
+              role="alert"
+              className="rounded-xl border border-red-300 bg-red-50 p-3.5 text-xs text-red-900 space-y-2"
+            >
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+                <div>
+                  <p className="font-bold">พบสินค้าหมดอายุในตะกร้า</p>
+                  <p className="text-red-800 mt-0.5">
+                    กรุณาตรวจสอบสินค้าที่หมดอายุก่อนส่งมอบ หากต้องการขายต่อให้กดปุ่ม &quot;ยืนยันขายสินค้าหมดอายุ&quot; อีกครั้ง
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setExpiredConfirmPending(false)}
+                  className="rounded-lg border border-red-200 bg-white px-3 py-1.5 font-semibold text-red-800 hover:bg-red-100 transition-colors"
+                >
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
+          )}
+
+          {checkoutError && (
+            <div
+              role="alert"
+              className="flex items-center justify-between gap-3 rounded-xl border border-rose-300 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-900"
+            >
+              <div className="flex items-start gap-2 min-w-0">
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+                <span className="font-medium break-words">{checkoutError}</span>
+              </div>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={handleCompleteSale}
+                className="shrink-0 rounded-lg bg-rose-600 px-3 py-1.5 font-bold text-white hover:bg-rose-700 disabled:opacity-50 transition-colors"
+              >
+                ลองใหม่
+              </button>
+            </div>
+          )}
 
           <button
             type="button"
             disabled={submitting || isCashPaymentBlocked || isCreditDownPaymentInvalid}
             onClick={handleCompleteSale}
-            className="w-full rounded-xl bg-emerald-600 py-3.5 text-base font-bold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className={`w-full flex items-center justify-center gap-2 rounded-xl py-3.5 px-4 text-base font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+              expiredConfirmPending
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'bg-emerald-600 hover:bg-emerald-700'
+            }`}
           >
-            {submitting
-              ? 'กำลังบันทึก...'
-              : isSplitCashQr
-              ? `ยืนยันแยกจ่าย (สด ฿${formatNumber(cashReceivedNum)} + QR ฿${formatNumber(splitQrAmount)})`
-              : isCashPaymentBlocked
-              ? `เงินสดไม่พอ (ขาดอีก ฿${formatNumber(cashShortfall)})`
-              : isCreditDownPaymentInvalid
-              ? `ยอดจ่ายสดต้องน้อยกว่ายอดสุทธิ (฿${formatNumber(finalTotal)})`
-              : paymentMethod === 'credit' && creditDownPayment > 0
-              ? `ยืนยันขายเชื่อ (จ่ายสด ฿${formatNumber(creditDownPayment)} • ค้าง ฿${formatNumber(netCreditAmount)})`
-              : settleOldDebtAmount > 0
-              ? `ยืนยันรับเงิน ฿${formatNumber(totalToCollectWithDebt)} (บิลนี้ + ชำระหนี้เดิม)`
-              : 'ยืนยันรับเงิน / บันทึกบิล'}
+            <span>
+              {submitting
+                ? 'กำลังบันทึก...'
+                : expiredConfirmPending
+                ? 'ยืนยันขายสินค้าหมดอายุ'
+                : isSplitCashQr
+                ? `ยืนยันแยกจ่าย (สด ฿${formatNumber(cashReceivedNum)} + QR ฿${formatNumber(splitQrAmount)})`
+                : isCashPaymentBlocked
+                ? `เงินสดไม่พอ (ขาดอีก ฿${formatNumber(cashShortfall)})`
+                : isCreditDownPaymentInvalid
+                ? `ยอดจ่ายสดต้องน้อยกว่ายอดสุทธิ (฿${formatNumber(finalTotal)})`
+                : paymentMethod === 'credit' && creditDownPayment > 0
+                ? `ยืนยันขายเชื่อ (จ่ายสด ฿${formatNumber(creditDownPayment)} • ค้าง ฿${formatNumber(netCreditAmount)})`
+                : settleOldDebtAmount > 0
+                ? `ยืนยันรับเงิน ฿${formatNumber(totalToCollectWithDebt)} (บิลนี้ + ชำระหนี้เดิม)`
+                : 'ยืนยันรับเงิน / บันทึกบิล'}
+            </span>
+            {!submitting && !isCashPaymentBlocked && !isCreditDownPaymentInvalid && (
+              <kbd aria-hidden="true" className="hidden sm:inline-flex items-center rounded border border-white/30 bg-white/15 px-1.5 py-0.5 text-xs font-semibold text-white">
+                Ctrl+↵
+              </kbd>
+            )}
           </button>
         </div>
       </Modal>
@@ -10500,10 +10860,14 @@ export default function PosPage() {
       >
         <form onSubmit={handleSaveQuickCustomer} className="space-y-3.5">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label
+              htmlFor="quick-cust-name"
+              className="block text-xs font-semibold text-slate-700 mb-1"
+            >
               ชื่อลูกค้า <span className="text-rose-500">*</span>
             </label>
             <input
+              id="quick-cust-name"
               type="text"
               required
               autoFocus
@@ -10514,10 +10878,14 @@ export default function PosPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label
+              htmlFor="quick-cust-phone"
+              className="block text-xs font-semibold text-slate-700 mb-1"
+            >
               เบอร์โทร (ไม่บังคับ)
             </label>
             <input
+              id="quick-cust-phone"
               type="tel"
               value={quickCustPhone}
               onChange={(e) => setQuickCustPhone(e.target.value)}
@@ -10526,10 +10894,14 @@ export default function PosPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label
+              htmlFor="quick-cust-contact-note"
+              className="block text-xs font-semibold text-slate-700 mb-1"
+            >
               ที่อยู่ / จุดสังเกตบ้าน / LINE (ไม่บังคับ)
             </label>
             <input
+              id="quick-cust-contact-note"
               type="text"
               value={quickCustContactNote}
               onChange={(e) => setQuickCustContactNote(e.target.value)}
@@ -10538,10 +10910,14 @@ export default function PosPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label
+              htmlFor="quick-cust-note"
+              className="block text-xs font-semibold text-slate-700 mb-1"
+            >
               หมายเหตุ (ไม่บังคับ)
             </label>
             <input
+              id="quick-cust-note"
               type="text"
               value={quickCustNote}
               onChange={(e) => setQuickCustNote(e.target.value)}
@@ -10621,10 +10997,14 @@ export default function PosPage() {
           </div>
           {(holdOrderTypeInput === 'pickup' || holdOrderTypeInput === 'delivery') && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label
+                htmlFor="hold-delivery-info"
+                className="block text-sm font-medium text-slate-700 mb-1"
+              >
                 เวลานัดรับ / ที่อยู่จัดส่ง / เบอร์ติดต่อ
               </label>
               <input
+                id="hold-delivery-info"
                 type="text"
                 value={holdDeliveryInfoInput}
                 onChange={(e) => setHoldDeliveryInfoInput(e.target.value)}
@@ -10638,10 +11018,14 @@ export default function PosPage() {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="hold-note-input"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
               หมายเหตุ / ชื่อลูกค้า (ไม่บังคับ)
             </label>
             <input
+              id="hold-note-input"
               type="text"
               autoFocus
               value={holdNoteInput}
@@ -11097,104 +11481,125 @@ export default function PosPage() {
                           </div>
                         )}
 
-                        <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            aria-pressed={bill.packingStatus === 'packed'}
-                            onClick={() => handleToggleHeldBillPackingStatus(bill.id)}
-                            className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors ${
-                              bill.packingStatus === 'packed'
-                                ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                                : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
-                            }`}
-                          >
-                            <span>
-                              {bill.packingStatus === 'packed'
-                                ? '✅ จัดใส่ถุงเสร็จแล้ว'
-                                : '⏳ รอจัดของ'}
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handlePrintHeldBillPackingSlip(bill)}
-                            className="flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 hover:bg-violet-100 transition-colors"
-                          >
-                            <Printer className="h-3.5 w-3.5" />
-                            <span>พิมพ์ใบจัดของ</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleCopyHeldBillLineSummary(bill)}
-                            className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors ${
-                              isCopied
-                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                                : 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100'
-                            }`}
-                          >
-                            {isCopied ? (
-                              <>
-                                <Check className="h-3.5 w-3.5" />
-                                <span>คัดลอกแล้ว</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="h-3.5 w-3.5" />
-                                <span>คัดลอกสรุปออเดอร์ส่ง LINE</span>
-                              </>
-                            )}
-                          </button>
-                          {bill.orderType === 'delivery' && (
+                        <div className="pt-2 border-t border-slate-100 space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
                             <button
                               type="button"
-                              onClick={() => handleCopyRiderDeliverySheet(bill)}
-                              className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors ${
-                                copiedRiderSheetBillId === bill.id
-                                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                                  : 'border-teal-200 bg-teal-50 text-teal-800 hover:bg-teal-100'
+                              aria-pressed={bill.packingStatus === 'packed'}
+                              onClick={() => handleToggleHeldBillPackingStatus(bill.id)}
+                              className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors ${
+                                bill.packingStatus === 'packed'
+                                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                  : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
                               }`}
                             >
-                              {copiedRiderSheetBillId === bill.id ? (
-                                <>
-                                  <Check className="h-3.5 w-3.5" />
-                                  <span>คัดลอกใบงานแล้ว</span>
-                                </>
-                              ) : (
-                                <span>🛵 คัดลอกใบงานคนส่งของ</span>
+                              <span>
+                                {bill.packingStatus === 'packed'
+                                  ? 'จัดใส่ถุงเสร็จแล้ว'
+                                  : 'รอจัดของ'}
+                              </span>
+                            </button>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                aria-expanded={expandedHeldBillActionsId === bill.id}
+                                onClick={() =>
+                                  setExpandedHeldBillActionsId((prev) =>
+                                    prev === bill.id ? null : bill.id
+                                  )
+                                }
+                                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+                              >
+                                {expandedHeldBillActionsId === bill.id ? 'ซ่อนเมนู' : '⋯ เพิ่มเติม'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRestoreHeldBill(bill.id)}
+                                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition-colors"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                                <span>เรียกคืนบิล</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleQuickCheckoutHeldBill(bill.id)}
+                                className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-amber-600 transition-colors shadow-2xs"
+                              >
+                                <span>คิดเงินทันที</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {expandedHeldBillActionsId === bill.id && (
+                            <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                              <button
+                                type="button"
+                                onClick={() => handlePrintHeldBillPackingSlip(bill)}
+                                className="flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 hover:bg-violet-100 transition-colors"
+                              >
+                                <Printer className="h-3.5 w-3.5" />
+                                <span>พิมพ์ใบจัดของ</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyHeldBillLineSummary(bill)}
+                                className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors ${
+                                  isCopied
+                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                    : 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100'
+                                }`}
+                              >
+                                {isCopied ? (
+                                  <>
+                                    <Check className="h-3.5 w-3.5" />
+                                    <span>คัดลอกแล้ว</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-3.5 w-3.5" />
+                                    <span>คัดลอกสรุปส่ง LINE</span>
+                                  </>
+                                )}
+                              </button>
+                              {bill.orderType === 'delivery' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyRiderDeliverySheet(bill)}
+                                  className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors ${
+                                    copiedRiderSheetBillId === bill.id
+                                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                      : 'border-teal-200 bg-teal-50 text-teal-800 hover:bg-teal-100'
+                                  }`}
+                                >
+                                  {copiedRiderSheetBillId === bill.id ? (
+                                    <>
+                                      <Check className="h-3.5 w-3.5" />
+                                      <span>คัดลอกใบงานแล้ว</span>
+                                    </>
+                                  ) : (
+                                    <span>คัดลอกใบงานคนส่งของ</span>
+                                  )}
+                                </button>
                               )}
-                            </button>
+                              {cart.length > 0 && heldBills.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleMergeCartIntoHeldBill(bill.id)}
+                                  className="flex items-center gap-1 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
+                                >
+                                  <span>รวมตะกร้าเข้าบิลพักนี้</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteHeldBill(bill.id)}
+                                className="flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                <span>ลบบิล</span>
+                              </button>
+                            </div>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteHeldBill(bill.id)}
-                            className="flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            <span>ลบบิล</span>
-                          </button>
-                          {cart.length > 0 && heldBills.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => handleMergeCartIntoHeldBill(bill.id)}
-                              className="flex items-center gap-1 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
-                            >
-                              <span>➕ รวมตะกร้าปัจจุบันเข้าบิลพักนี้</span>
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => handleRestoreHeldBill(bill.id)}
-                            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition-colors"
-                          >
-                            <RotateCcw className="h-3.5 w-3.5" />
-                            <span>เรียกคืนบิล</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleQuickCheckoutHeldBill(bill.id)}
-                            className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-amber-600 transition-colors shadow-2xs"
-                          >
-                            <span>⚡ คิดเงินบิลนี้ทันที</span>
-                          </button>
                         </div>
                       </div>
                     );
@@ -11215,10 +11620,14 @@ export default function PosPage() {
       >
         <form onSubmit={handleOpenShift} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="open-shift-cash-input"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
               เงินทอนตั้งต้นในลิ้นชัก (บาท)
             </label>
             <input
+              id="open-shift-cash-input"
               type="number"
               min="0"
               step="1"
@@ -11411,9 +11820,19 @@ export default function PosPage() {
                       </>
                     ) : (
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-600 font-medium">เงินที่รับมา</span>
+                        <span className="text-slate-600 font-medium">
+                          {lastReceipt.paymentMethod === 'qr'
+                            ? 'ยอดโอน PromptPay QR'
+                            : lastReceipt.paymentMethod === 'credit'
+                            ? 'บันทึกเป็นยอดค้างชำระ'
+                            : 'เงินที่รับมา'}
+                        </span>
                         <span className="font-bold text-slate-800 tabular-nums">
-                          {formatBaht(lastReceipt.cashReceived)}
+                          {formatBaht(
+                            lastReceipt.paymentMethod === 'credit'
+                              ? lastReceipt.total
+                              : lastReceipt.cashReceived
+                          )}
                         </span>
                       </div>
                     )}
@@ -11539,8 +11958,8 @@ export default function PosPage() {
               </div>
             )}
 
-            {/* Copy & Print Actions */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {/* Copy & Print Actions (<=4 choices by default) */}
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={handleCopyReceipt}
@@ -11568,33 +11987,50 @@ export default function PosPage() {
               </button>
               <button
                 type="button"
-                onClick={handlePrintPackingSlip}
-                className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 py-2.5 px-3 text-xs sm:text-sm font-bold text-sky-800 hover:bg-sky-100 transition-colors"
+                aria-expanded={showMoreReceiptActions}
+                onClick={() => setShowMoreReceiptActions((v) => !v)}
+                className="flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white py-2.5 px-3 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
               >
-                <Package className="h-4 w-4 text-sky-600" />
-                <span>พิมพ์ใบจัดของ / ใบส่งของ</span>
+                <span>{showMoreReceiptActions ? 'ซ่อนเมนู' : '⋯ เพิ่มเติม'}</span>
               </button>
             </div>
 
-            <button
-              type="button"
-              disabled={lastReceipt.items.length === 0}
-              onClick={() => handleRepeatReceiptItems(lastReceipt)}
-              className="w-full flex items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 py-3 px-4 text-sm font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              <RotateCcw className="h-4 w-4 text-emerald-600" />
-              <span>ดึงรายการเข้าตะกร้าซ้ำ</span>
-            </button>
+            {showMoreReceiptActions && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handlePrintPackingSlip}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 py-2.5 px-3 text-xs sm:text-sm font-bold text-sky-800 hover:bg-sky-100 transition-colors"
+                >
+                  <Package className="h-4 w-4 text-sky-600" />
+                  <span>พิมพ์ใบจัดของ / ใบส่งของ</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={lastReceipt.items.length === 0}
+                  onClick={() => handleRepeatReceiptItems(lastReceipt)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 py-2.5 px-3 text-xs sm:text-sm font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <RotateCcw className="h-4 w-4 text-emerald-600" />
+                  <span>ดึงรายการเข้าตะกร้าซ้ำ</span>
+                </button>
+              </div>
+            )}
 
             <button
               type="button"
+              autoFocus
               onClick={() => {
                 setLastReceipt(null);
+                setShowMoreReceiptActions(false);
                 focusSearchOnDesktop();
               }}
-              className="w-full rounded-xl bg-slate-900 py-3.5 text-base font-bold text-white hover:bg-slate-800 transition-colors"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 py-3.5 px-4 text-base font-bold text-white hover:bg-slate-800 transition-colors"
             >
-              เริ่มบิลถัดไป
+              <span>เริ่มบิลถัดไป</span>
+              <kbd aria-hidden="true" className="hidden sm:inline-flex items-center rounded border border-white/25 bg-white/10 px-1.5 py-0.5 text-xs font-semibold text-white/90">
+                Ctrl+↵
+              </kbd>
             </button>
           </div>
         )}
@@ -14117,10 +14553,14 @@ export default function PosPage() {
 
             {/* Note */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700">
+              <label
+                htmlFor="quick-debt-note-input"
+                className="block text-xs font-bold text-slate-700"
+              >
                 หมายเหตุ (ไม่บังคับ)
               </label>
               <input
+                id="quick-debt-note-input"
                 type="text"
                 value={quickDebtNote}
                 onChange={(e) => setQuickDebtNote(e.target.value)}

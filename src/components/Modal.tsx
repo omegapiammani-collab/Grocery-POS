@@ -21,6 +21,7 @@ export function Modal({
   closeOnBackdropClick = false,
 }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
 
   useEffect(() => {
@@ -28,9 +29,14 @@ export function Modal({
     if (!dialog) return;
 
     if (open && !dialog.open) {
+      if (document.activeElement instanceof HTMLElement) {
+        previousFocusRef.current = document.activeElement;
+      }
       dialog.showModal();
     } else if (!open && dialog.open) {
       dialog.close();
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
     }
   }, [open]);
 
@@ -40,6 +46,10 @@ export function Modal({
       dialog.returnValue = '';
     }
     onClose();
+    requestAnimationFrame(() => {
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+    });
   };
 
   if (!open) return null;
