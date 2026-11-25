@@ -1625,6 +1625,8 @@ export default function PosPage() {
   const [showCheckoutNoteSection, setShowCheckoutNoteSection] = useState(false);
   const [showMoreDiscountPresets, setShowMoreDiscountPresets] = useState(false);
   const [showMoreReceiptActions, setShowMoreReceiptActions] = useState(false);
+  const [showCartCustomerPicker, setShowCartCustomerPicker] = useState(false);
+  const [confirmDeleteBundleId, setConfirmDeleteBundleId] = useState<string | null>(null);
   const [expandedHeldBillActionsId, setExpandedHeldBillActionsId] = useState<string | null>(null);
   const cashReceivedInputRef = useRef<HTMLInputElement>(null);
   const [highlightedProductIndex, setHighlightedProductIndex] = useState<number>(-1);
@@ -5209,10 +5211,10 @@ export default function PosPage() {
     setTimeout(() => setCopiedQuickDebtReceipt(false), 2500);
   };
 
-  const openCheckout = useCallback(() => {
+  const openCheckout = useCallback((initialMethod: PaymentMethod = 'cash') => {
     if (cart.length === 0) return;
     const existingDiscount = Math.min(cartTotal, Math.max(0, Number(billDiscount) || 0));
-    setPaymentMethod('cash');
+    setPaymentMethod(initialMethod);
     setSplitCashQrEnabled(false);
     setPointsToRedeem(0);
     setVipDiscountApplied(false);
@@ -5434,23 +5436,21 @@ export default function PosPage() {
           selectPaymentMethod('cash');
         } else if (cart.length > 0 && !hasOpenModal) {
           e.preventDefault();
-          setPaymentMethod('cash');
-          openCheckout();
+          openCheckout('cash');
         }
       } else if (e.key === 'F9') {
         e.preventDefault();
         if (checkoutOpen && !customerDisplayOpen) {
           selectPaymentMethod('qr');
         } else if (cart.length > 0 && !hasOpenModal) {
-          openCheckout();
+          openCheckout('qr');
         }
       } else if (e.key === 'F10') {
         e.preventDefault();
         if (checkoutOpen && !customerDisplayOpen) {
           selectPaymentMethod('credit');
         } else if (cart.length > 0 && !hasOpenModal) {
-          setPaymentMethod('credit');
-          openCheckout();
+          openCheckout('credit');
         }
       }
     };
@@ -7891,68 +7891,79 @@ export default function PosPage() {
 
       <div className="border-t border-slate-200 p-3 sm:p-4 bg-slate-50 space-y-2">
         <div className="space-y-1.5">
-          <input
-            type="search"
-            value={customerSearchQuery}
-            onChange={(e) => setCustomerSearchQuery(e.target.value)}
-            placeholder="ค้นหาชื่อหรือเบอร์โทรลูกค้า..."
-            aria-label="ค้นหาชื่อลูกค้าในตะกร้า"
-            className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs focus:border-emerald-500 focus:outline-none"
-          />
-          <div className="flex items-center gap-1.5">
-            <UserCheck className="h-4 w-4 text-slate-500 shrink-0" />
-            <select
-              aria-label="เลือกลูกค้าสมาชิก"
-              value={selectedCustomerId === '__new__' ? '' : selectedCustomerId}
-              onChange={(e) => handleSelectCustomer(e.target.value)}
-              className="flex-1 min-w-0 h-10 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 focus:border-emerald-500 focus:outline-none"
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setShowCartCustomerPicker((v) => !v)}
+              aria-expanded={showCartCustomerPicker}
+              className="flex-1 min-w-0 flex items-center justify-between gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
             >
-              <option value="">ลูกค้าทั่วไป (ไม่ระบุสมาชิก)</option>
-              {filteredCustomerOptions.map((c) => {
-                const vipPct = defaultDiscounts[c.id] ?? 0;
-                const dueInfo = getCustomerDueInfo(dueDates[c.id], todayIso, c.total_debt);
-                return (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({formatNumber(loyaltyPoints[c.id] ?? 0)} แต้ม
-                    {vipPct > 0 ? `, VIP ลด ${formatNumber(vipPct)}%` : ''}
-                    {getCustomerDueSelectLabel(dueInfo)})
-                  </option>
-                );
-              })}
-            </select>
+              <span className="flex items-center gap-1.5 min-w-0">
+                <UserCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span className="truncate font-semibold">
+                  {selectedCustomer ? selectedCustomer.name : 'ลูกค้าทั่วไป (ไม่ระบุสมาชิก)'}
+                </span>
+                {selectedCustomer && selectedCustomerVipPct > 0 && (
+                  <span className="rounded-full bg-violet-100 border border-violet-200 px-1.5 py-0.5 text-[10px] font-bold text-violet-800 shrink-0 tabular-nums">
+                    VIP -{formatNumber(selectedCustomerVipPct)}%
+                  </span>
+                )}
+              </span>
+              <span className="text-[11px] font-semibold text-emerald-700 shrink-0">
+                {selectedCustomer
+                  ? `${formatNumber(selectedCustomerPoints)} แต้ม ▾`
+                  : showCartCustomerPicker
+                  ? 'ซ่อน ▴'
+                  : 'เปลี่ยน ▾'}
+              </span>
+            </button>
             <button
               type="button"
               onClick={openQuickCustomerModal}
               title="เพิ่มลูกค้าด่วน"
               aria-label="เพิ่มลูกค้าด่วน"
-              className="h-10 w-10 flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors shrink-0"
+              className="h-8 w-8 flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors shrink-0"
             >
               <Plus className="h-4 w-4" />
             </button>
           </div>
-          {deferredCustomerSearch.trim() !== '' && filteredCustomerOptions.length === 0 && (
-              <p className="text-[11px] font-medium text-amber-800 px-1">
-                ไม่พบลูกค้าที่ค้นหา — กดปุ่ม + เพื่อเพิ่มลูกค้าใหม่ได้ทันที
-              </p>
-            )}
-          {selectedCustomer && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-2.5 py-1.5 text-xs">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                  <span className="font-semibold text-amber-900 truncate">
-                    {selectedCustomer.name}
-                  </span>
-                  {selectedCustomerVipPct > 0 && (
-                    <span className="inline-flex items-center rounded-full border border-violet-300 bg-violet-100 px-1.5 py-0.5 text-[11px] font-bold text-violet-800 whitespace-nowrap shrink-0 tabular-nums">
-                      VIP -{formatNumber(selectedCustomerVipPct)}%
-                    </span>
-                  )}
-                  {renderCustomerDueBadge(selectedCustomerDueInfo, selectedCustomer.total_debt, true)}
-                </div>
-                <span className="font-bold text-amber-700 tabular-nums shrink-0">
-                  {formatNumber(selectedCustomerPoints)} แต้ม
-                </span>
-              </div>
+          {showCartCustomerPicker && (
+            <div className="space-y-1.5 pt-1">
+              <input
+                type="search"
+                value={customerSearchQuery}
+                onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                placeholder="ค้นหาชื่อหรือเบอร์โทรลูกค้า..."
+                aria-label="ค้นหาชื่อลูกค้าในตะกร้า"
+                className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs focus:border-emerald-500 focus:outline-none"
+              />
+              <select
+                aria-label="เลือกลูกค้าสมาชิก"
+                value={selectedCustomerId === '__new__' ? '' : selectedCustomerId}
+                onChange={(e) => {
+                  handleSelectCustomer(e.target.value);
+                  setShowCartCustomerPicker(false);
+                }}
+                className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="">ลูกค้าทั่วไป (ไม่ระบุสมาชิก)</option>
+                {filteredCustomerOptions.map((c) => {
+                  const vipPct = defaultDiscounts[c.id] ?? 0;
+                  const dueInfo = getCustomerDueInfo(dueDates[c.id], todayIso, c.total_debt);
+                  return (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({formatNumber(loyaltyPoints[c.id] ?? 0)} แต้ม
+                      {vipPct > 0 ? `, VIP ลด ${formatNumber(vipPct)}%` : ''}
+                      {getCustomerDueSelectLabel(dueInfo)})
+                    </option>
+                  );
+                })}
+              </select>
+              {deferredCustomerSearch.trim() !== '' && filteredCustomerOptions.length === 0 && (
+                <p className="text-[11px] font-medium text-amber-800 px-1">
+                  ไม่พบลูกค้าที่ค้นหา — กดปุ่ม + เพื่อเพิ่มลูกค้าใหม่ได้ทันที
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -8037,12 +8048,12 @@ export default function PosPage() {
           <button
             type="button"
             disabled={cart.length === 0}
-            onClick={openCheckout}
+            onClick={() => openCheckout('cash')}
             className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-3.5 px-3 text-sm sm:text-base font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
             <span>ชำระเงิน ({formatBaht(discountAmount > 0 ? finalTotal : cartTotal)})</span>
             <kbd aria-hidden="true" className="hidden sm:inline-block rounded bg-emerald-700/80 border border-emerald-400/40 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-100">
-              F9
+              F8
             </kbd>
           </button>
         </div>
@@ -8568,15 +8579,37 @@ export default function PosPage() {
                               : ''}
                           </span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteBundle(bundle.id)}
-                          aria-label={`ลบชุดขายด่วน ${bundle.name}`}
-                          title={`ลบชุด "${bundle.name}"`}
-                          className="px-1.5 py-1.5 text-indigo-400 hover:text-rose-600 hover:bg-rose-50 border-l border-indigo-200 transition-colors"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
+                        {confirmDeleteBundleId === bundle.id ? (
+                          <div className="inline-flex items-center border-l border-indigo-200 bg-rose-50 px-1.5 py-1 gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleDeleteBundle(bundle.id);
+                                setConfirmDeleteBundleId(null);
+                              }}
+                              className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white hover:bg-rose-700"
+                            >
+                              ลบ
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteBundleId(null)}
+                              className="rounded bg-white border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100"
+                            >
+                              ยกเลิก
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteBundleId(bundle.id)}
+                            aria-label={`ลบชุดขายด่วน ${bundle.name}`}
+                            title={`ลบชุด "${bundle.name}"`}
+                            className="px-1.5 py-1.5 text-indigo-400 hover:text-rose-600 hover:bg-rose-50 border-l border-indigo-200 transition-colors"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -8624,14 +8657,44 @@ export default function PosPage() {
                 </button>
               </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-12 text-slate-500 text-sm">
-                {selectedCat === 'pinned' && !search.trim()
-                  ? 'ยังไม่มีสินค้าที่ปักหมุด กดปุ่มดาว ★ ที่มุมการ์ดสินค้าเพื่อปักหมุดขายด่วน'
-                  : selectedCat === 'promo' && !search.trim()
-                  ? 'ยังไม่มีสินค้าที่มีป้ายโปรโมชั่น'
-                  : selectedCat === 'wholesale' && !search.trim()
-                  ? 'ยังไม่มีสินค้าที่ตั้งค่าราคาส่ง'
-                  : 'ไม่พบสินค้าในหมวดหมู่นี้'}
+              <div className="flex flex-col items-center justify-center text-center py-12 px-4 text-slate-500 text-sm space-y-3">
+                <p>
+                  {selectedCat === 'pinned' && !search.trim()
+                    ? 'ยังไม่มีสินค้าที่ปักหมุด กดปุ่มดาว ★ ที่มุมการ์ดสินค้าเพื่อปักหมุดขายด่วน'
+                    : selectedCat === 'promo' && !search.trim()
+                    ? 'ยังไม่มีสินค้าที่มีป้ายโปรโมชั่น'
+                    : selectedCat === 'wholesale' && !search.trim()
+                    ? 'ยังไม่มีสินค้าที่ตั้งค่าราคาส่ง'
+                    : search.trim()
+                    ? `ไม่พบสินค้าที่ตรงกับ "${search.trim()}"`
+                    : 'ไม่พบสินค้าในหมวดหมู่นี้'}
+                </p>
+                {search.trim() !== '' && (
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdHocName(search.trim());
+                        setAdHocPrice('');
+                        setAdHocOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>คิดราคาด่วนสำหรับ &quot;{search.trim()}&quot;</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearch('');
+                        focusSearchOnDesktop();
+                      }}
+                      className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                      ล้างคำค้นหา
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div
@@ -9247,6 +9310,7 @@ export default function PosPage() {
         onClose={() => setCalcOpen(false)}
         title="เครื่องคิดเลขด่วน"
         maxWidthClass="max-w-sm"
+        closeOnBackdropClick
       >
         <div className="space-y-3">
           <div className="rounded-2xl bg-slate-900 px-4 py-3.5 text-right text-white shadow-inner">
@@ -12731,6 +12795,7 @@ export default function PosPage() {
         onClose={() => setShortcutsOpen(false)}
         title="คู่มือคีย์ลัดแป้นพิมพ์ (F1)"
         maxWidthClass="max-w-md"
+        closeOnBackdropClick
       >
         <div className="space-y-2.5 text-sm">
           {[
