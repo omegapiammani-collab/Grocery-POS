@@ -5658,9 +5658,12 @@ export default function PosPage() {
     const formatted = Number.isInteger(finalAmount)
       ? String(finalAmount)
       : String(Math.round(finalAmount * 100) / 100);
-    setAdHocPrice(formatted);
+    setQuickMiscName('สินค้าเบ็ดเตล็ด');
+    setQuickMiscPrice(formatted);
+    setQuickMiscCost('');
+    setQuickMiscQty('1');
     setCalcOpen(false);
-    setAdHocOpen(true);
+    setQuickMiscOpen(true);
   };
 
   const handleOpenShift = async (e: React.FormEvent) => {
@@ -7571,6 +7574,7 @@ export default function PosPage() {
                           type="button"
                           onClick={() => startEditCartPrice(item)}
                           title="คลิกเพื่อแก้ไขราคาต่อหน่วยเฉพาะบิลนี้"
+                          aria-label={`แก้ไขราคาต่อหน่วย ${item.product_name} ปัจจุบัน ${formatBaht(item.unit_price)} ต่อ${item.unit_name}`}
                           className="group inline-flex items-center gap-1 rounded-md px-1 -ml-1 py-0.5 text-xs text-slate-500 hover:bg-emerald-50 hover:text-emerald-700 transition-colors tabular-nums"
                         >
                           <span>
@@ -7695,6 +7699,7 @@ export default function PosPage() {
                     <div className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-1.5 py-1">
                       <button
                         type="button"
+                        autoFocus
                         onClick={() => {
                           setConfirmDeleteCartItemKey(null);
                           updateCartQty(item.key, -1);
@@ -7887,7 +7892,7 @@ export default function PosPage() {
                     <button
                       type="button"
                       onClick={() => setEditingNoteKey(item.key)}
-                      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-slate-500 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-amber-50 hover:text-amber-700 transition-colors"
                     >
                       <StickyNote className="h-3 w-3 shrink-0" />
                       <span>+ โน้ตสินค้า</span>
@@ -7897,7 +7902,7 @@ export default function PosPage() {
                     type="button"
                     onClick={() => openWeightBudgetModal(item)}
                     title="คำนวณปริมาณชั่งกิโล หรือตักแบ่งขายตามงบเงินลูกค้า"
-                    className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors shrink-0"
+                    className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors shrink-0"
                   >
                     <span>⚖️ ชั่งกิโล / ตักตามงบ</span>
                   </button>
@@ -7905,7 +7910,7 @@ export default function PosPage() {
                     <button
                       type="button"
                       onClick={() => openContainerDepositFromCartItem(item)}
-                      className="inline-flex items-center gap-1 rounded-md border border-cyan-300 bg-cyan-50 px-2 py-0.5 text-[11px] font-bold text-cyan-800 hover:bg-cyan-100 transition-colors shrink-0"
+                      className="inline-flex items-center gap-1 rounded-md border border-cyan-300 bg-cyan-50 px-2.5 py-1 text-[11px] font-bold text-cyan-800 hover:bg-cyan-100 transition-colors shrink-0"
                     >
                       <Package className="h-3 w-3 shrink-0 text-cyan-600" />
                       <span>+ บันทึกมัดจำขวด/ถังจากรายการนี้</span>
@@ -8212,11 +8217,18 @@ export default function PosPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setAdHocOpen(true)}
+                onClick={openQuickMiscModal}
+                title="เพิ่มสินค้าคิดราคาด่วน / เบ็ดเตล็ด (F7)"
                 className="flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition-colors shrink-0"
               >
                 <Plus className="h-4 w-4" />
                 <span>คิดราคาด่วน</span>
+                <kbd
+                  aria-hidden="true"
+                  className="hidden sm:inline-flex items-center rounded border border-amber-200 bg-white/80 px-1 py-0.2 text-[10px] font-bold text-amber-700"
+                >
+                  F7
+                </kbd>
               </button>
               <button
                 type="button"
@@ -8302,15 +8314,6 @@ export default function PosPage() {
                     >
                       <Tag className="h-4 w-4 text-amber-600" />
                       <span>เช็กราคา (F6)</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={openQuickMiscModal}
-                      title="เพิ่มสินค้าเบ็ดเตล็ด / สินค้านอกรายการด่วน (F7)"
-                      className="flex items-center gap-1.5 rounded-xl bg-teal-50 border border-teal-200 px-2.5 py-2 text-xs font-semibold text-teal-800 hover:bg-teal-100 transition-colors shrink-0"
-                    >
-                      <PackagePlus className="h-4 w-4 text-teal-600" />
-                      <span>+ เบ็ดเตล็ด (F7)</span>
                     </button>
                     <button
                       type="button"
@@ -8430,6 +8433,28 @@ export default function PosPage() {
               <div className="flex items-center gap-2 overflow-x-auto touch-pan-x pb-1 min-w-0 flex-1">
                 <button
                   type="button"
+                  onClick={() => setSelectedCat('quick')}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
+                    selectedCat === 'quick'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  ★ ปุ่มด่วน
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCat('all')}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
+                    selectedCat === 'all'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  ทั้งหมด
+                </button>
+                <button
+                  type="button"
                   onClick={() => setSelectedCat('pinned')}
                   className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                     selectedCat === 'pinned'
@@ -8439,6 +8464,7 @@ export default function PosPage() {
                 >
                   ★ ปักหมุด ({pinnedCount})
                 </button>
+                <span aria-hidden="true" className="h-4 w-px bg-slate-200 shrink-0" />
                 <button
                   type="button"
                   onClick={() => setSelectedCat('promo')}
@@ -8460,28 +8486,6 @@ export default function PosPage() {
                   }`}
                 >
                   📦 มีราคาส่ง ({wholesaleProductsCount})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCat('quick')}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
-                    selectedCat === 'quick'
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  ★ ปุ่มด่วน
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCat('all')}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
-                    selectedCat === 'all'
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  ทั้งหมด
                 </button>
                 {categories.map((cat) => (
                   <button
@@ -8694,9 +8698,11 @@ export default function PosPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setAdHocName(search.trim());
-                        setAdHocPrice('');
-                        setAdHocOpen(true);
+                        setQuickMiscName(search.trim());
+                        setQuickMiscPrice('');
+                        setQuickMiscCost('');
+                        setQuickMiscQty('1');
+                        setQuickMiscOpen(true);
                       }}
                       className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors"
                     >
@@ -9007,6 +9013,7 @@ export default function PosPage() {
         open={mobileCartOpen}
         onClose={() => setMobileCartOpen(false)}
         title="ตะกร้าสินค้า"
+        closeOnBackdropClick
       >
         <div className="-m-5 h-[70dvh] flex flex-col">{CartPanel}</div>
       </Modal>
