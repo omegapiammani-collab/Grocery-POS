@@ -9034,7 +9034,6 @@ export default function PosPage() {
         open={mobileCartOpen}
         onClose={() => setMobileCartOpen(false)}
         title="ตะกร้าสินค้า"
-        closeOnBackdropClick
       >
         <div className="-m-5 h-[70dvh] flex flex-col">{CartPanel}</div>
       </Modal>
@@ -9305,7 +9304,6 @@ export default function PosPage() {
         onClose={() => setCalcOpen(false)}
         title="เครื่องคิดเลขด่วน"
         maxWidthClass="max-w-sm"
-        closeOnBackdropClick
       >
         <div className="space-y-3">
           <div className="rounded-2xl bg-slate-900 px-4 py-3.5 text-right text-white shadow-inner">
@@ -11268,7 +11266,6 @@ export default function PosPage() {
         }}
         title={`บิลที่พักไว้ (${heldBills.length})`}
         maxWidthClass="max-w-lg"
-        closeOnBackdropClick
       >
         {heldBills.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-300 py-12 text-center text-sm text-slate-500">
@@ -12121,7 +12118,6 @@ export default function PosPage() {
         }}
         title="ประวัติบิลวันนี้"
         maxWidthClass="max-w-2xl"
-        closeOnBackdropClick={!partialReturnSale && !partialReturnSubmitting}
       >
         <div className="space-y-4">
           {todaySalesNotice && (
@@ -12807,7 +12803,6 @@ export default function PosPage() {
         onClose={() => setShortcutsOpen(false)}
         title="คู่มือคีย์ลัดแป้นพิมพ์ (F1)"
         maxWidthClass="max-w-md"
-        closeOnBackdropClick
       >
         <div className="space-y-2.5 text-sm">
           {[
@@ -13091,7 +13086,6 @@ export default function PosPage() {
         onClose={() => setPriceCheckerOpen(false)}
         title="เช็กราคาและข้อมูลสินค้าด่วน (F6)"
         maxWidthClass="max-w-2xl"
-        closeOnBackdropClick
       >
         <div className="space-y-4">
           <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5 text-xs text-amber-900 flex items-center justify-between gap-2">
