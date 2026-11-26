@@ -58,6 +58,10 @@ export function Modal({
     <dialog
       ref={dialogRef}
       aria-labelledby={titleId}
+      onCancel={(e) => {
+        e.preventDefault();
+        handleClose();
+      }}
       onClose={handleClose}
       onClick={(e) => {
         if (closeOnBackdropClick && e.target === dialogRef.current) {
@@ -74,7 +78,7 @@ export function Modal({
           type="button"
           onClick={handleClose}
           aria-label="ปิดหน้าต่าง"
-          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
         >
           <X className="h-5 w-5" />
         </button>

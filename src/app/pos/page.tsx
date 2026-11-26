@@ -175,7 +175,7 @@ const QUICK_MISC_ITEM_NAMES = [
   'น้ำแข็ง/น้ำดื่มแบ่งขาย',
 ] as const;
 
-const QUICK_MISC_ITEM_PRICES = [5, 10, 15, 20, 25, 30, 50] as const;
+const QUICK_MISC_ITEM_PRICES = [10, 20, 50, 100] as const;
 
 interface PosBundleItem {
   product_id: string;
@@ -1595,6 +1595,7 @@ export default function PosPage() {
   const [copiedHeldBillId, setCopiedHeldBillId] = useState<string | null>(null);
   const [copiedRiderSheetBillId, setCopiedRiderSheetBillId] = useState<string | null>(null);
   const [confirmClearHeldBills, setConfirmClearHeldBills] = useState(false);
+  const [confirmDeleteHeldBillId, setConfirmDeleteHeldBillId] = useState<string | null>(null);
   const [holdModalOpen, setHoldModalOpen] = useState(false);
   const [holdNoteInput, setHoldNoteInput] = useState('');
   const [holdTagInput, setHoldTagInput] = useState('');
@@ -1606,9 +1607,7 @@ export default function PosPage() {
   // Custom price modal
   const [customPriceProduct, setCustomPriceProduct] = useState<Product | null>(null);
   const [customPriceInput, setCustomPriceInput] = useState('');
-  const [adHocOpen, setAdHocOpen] = useState(false);
-  const [adHocName, setAdHocName] = useState('สินค้าเบ็ดเตล็ด');
-  const [adHocPrice, setAdHocPrice] = useState('');
+  const [showQuickMiscCost, setShowQuickMiscCost] = useState(false);
 
   // Weight & Target Budget Calculator Modal
   const [weightBudgetItemKey, setWeightBudgetItemKey] = useState<string | null>(null);
@@ -4456,33 +4455,10 @@ export default function PosPage() {
     setCustomPriceProduct(null);
   };
 
-  const handleConfirmAdHoc = (e: React.FormEvent) => {
-    e.preventDefault();
-    const price = Number(adHocPrice);
-    if (!price || price <= 0) return;
-
-    setCart((prev) => [
-      ...prev,
-      {
-        key: `adhoc_${Date.now()}`,
-        product_id: null,
-        product_name: adHocName.trim() || 'สินค้าเบ็ดเตล็ด',
-        unit_name: 'รายการ',
-        conversion_rate: 1,
-        unit_price: price,
-        unit_cost: 0,
-        qty: 1,
-      },
-    ]);
-    playBeep('add');
-    setAdHocOpen(false);
-    setAdHocName('สินค้าเบ็ดเตล็ด');
-    setAdHocPrice('');
-  };
-
   const openQuickMiscModal = useCallback(() => {
     setQuickMiscName('สินค้าเบ็ดเตล็ด');
     setQuickMiscPrice('');
+    setShowQuickMiscCost(false);
     setQuickMiscCost('');
     setQuickMiscQty('1');
     setQuickMiscOpen(true);
@@ -5369,6 +5345,7 @@ export default function PosPage() {
 
       const hasOpenModal =
         checkoutOpen ||
+        mobileCartOpen ||
         customerDisplayOpen ||
         containerDepositsOpen ||
         quickDebtModalOpen ||
@@ -5381,7 +5358,6 @@ export default function PosPage() {
         !!partialReturnSale ||
         shortcutsOpen ||
         calcOpen ||
-        adHocOpen ||
         receiptSettingsOpen ||
         quickCustomerModalOpen ||
         saveBundleModalOpen ||
@@ -5395,8 +5371,10 @@ export default function PosPage() {
         setShortcutsOpen((prev) => !prev);
       } else if (e.key === 'F2') {
         e.preventDefault();
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
+        if (!hasOpenModal) {
+          searchInputRef.current?.focus();
+          searchInputRef.current?.select();
+        }
       } else if (e.key === 'F4') {
         e.preventDefault();
         if (!hasOpenModal) {
@@ -5462,8 +5440,11 @@ export default function PosPage() {
     cart.length,
     heldBills.length,
     checkoutOpen,
+    mobileCartOpen,
     customerDisplayOpen,
     containerDepositsOpen,
+    quickDebtModalOpen,
+    quickDebtReceipt,
     holdModalOpen,
     heldBillsOpen,
     shiftModalOpen,
@@ -5472,7 +5453,6 @@ export default function PosPage() {
     partialReturnSale,
     shortcutsOpen,
     calcOpen,
-    adHocOpen,
     receiptSettingsOpen,
     quickCustomerModalOpen,
     saveBundleModalOpen,
@@ -7167,8 +7147,18 @@ export default function PosPage() {
       return info?.status === 'expired';
     });
     if (hasExpiredInCart) {
-      openCheckout();
+      openCheckout('cash');
       setExpiredConfirmPending(true);
+      return;
+    }
+
+    if (
+      discountAmount > 0 ||
+      pointsToRedeem > 0 ||
+      (selectedCustomer &&
+        (selectedCustomerStoreCredit > 0 || selectedCustomerOldDebt > 0))
+    ) {
+      openCheckout('cash');
       return;
     }
 
@@ -7182,6 +7172,16 @@ export default function PosPage() {
       unit_cost: item.unit_cost,
     }));
 
+    const noteParts: string[] = [];
+    const trimmedOrderNote = orderNote.trim();
+    if (trimmedOrderNote) {
+      noteParts.push(trimmedOrderNote);
+    }
+    if (cartItemNotesSummary) {
+      noteParts.push(cartItemNotesSummary);
+    }
+    const saleNote = noteParts.join(' | ');
+
     await submitSale({
       effectivePaymentMethod: 'cash',
       effectiveDiscount: 0,
@@ -7194,8 +7194,8 @@ export default function PosPage() {
         ? contactNotes[selectedCustomer.id] || undefined
         : undefined,
       redeemedPoints: 0,
-      saleNote: '',
-      trimmedOrderNote: '',
+      saleNote,
+      trimmedOrderNote,
       partialCashAmount: 0,
       qrPayAmount: 0,
       itemsPayload,
@@ -7554,18 +7554,18 @@ export default function PosPage() {
                           onClick={() => commitEditCartPrice(item.key)}
                           title="ยืนยันราคาใหม่"
                           aria-label="ยืนยันราคาใหม่"
-                          className="h-7 w-7 flex items-center justify-center rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                          className="h-9 w-9 flex items-center justify-center rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
                         >
-                          <Check className="h-3.5 w-3.5" />
+                          <Check className="h-4 w-4" />
                         </button>
                         <button
                           type="button"
                           onClick={cancelEditCartPrice}
                           title="ยกเลิกการแก้ราคา"
                           aria-label="ยกเลิกการแก้ราคา"
-                          className="h-7 w-7 flex items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors"
+                          className="h-9 w-9 flex items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors"
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <X className="h-4 w-4" />
                         </button>
                       </div>
                     ) : (
@@ -7883,9 +7883,9 @@ export default function PosPage() {
                         onClick={() => updateCartItemNote(item.key, '')}
                         aria-label={`ลบโน้ต ${item.product_name}`}
                         title="ลบโน้ต"
-                        className="h-5 w-5 flex items-center justify-center rounded text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors shrink-0"
+                        className="h-8 w-8 flex items-center justify-center rounded-md text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors shrink-0"
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   ) : (
@@ -8102,8 +8102,8 @@ export default function PosPage() {
         <AppShell storeName={settings?.store_name || 'ร้านขายของชำ POS'}>
       {toast && (
         <div
-          role="status"
-          aria-live="polite"
+          role={toast.type === 'error' ? 'alert' : 'status'}
+          aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
           className={`fixed top-14 md:top-4 right-4 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg ${
             toast.type === 'success'
               ? 'bg-emerald-600 text-white'
@@ -8198,6 +8198,7 @@ export default function PosPage() {
                 <input
                   ref={searchInputRef}
                   type="search"
+                  aria-label="ค้นหาชื่อสินค้า บาร์โค้ด หรือตำแหน่งชั้นวาง"
                   value={search}
                   onChange={(e) => {
                     const next = e.target.value;
@@ -8211,7 +8212,10 @@ export default function PosPage() {
                   placeholder="ค้นหาชื่อสินค้า บาร์โค้ด หรือตำแหน่งชั้นวาง (กด Enter เพื่อเพิ่มทันที)..."
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-12 py-2.5 text-sm focus:bg-white focus:border-emerald-500 focus:outline-none"
                 />
-                <kbd className="pointer-events-none hidden sm:inline-flex items-center rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2">
+                <kbd
+                  aria-hidden="true"
+                  className="pointer-events-none hidden sm:inline-flex items-center rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2"
+                >
                   F2
                 </kbd>
               </div>
@@ -8430,9 +8434,14 @@ export default function PosPage() {
 
             {/* Category Tabs, Multiplier & Sort Toggle */}
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 overflow-x-auto touch-pan-x pb-1 min-w-0 flex-1">
+              <div
+                role="group"
+                aria-label="กรองหมวดหมู่สินค้า"
+                className="flex items-center gap-2 overflow-x-auto touch-pan-x pb-1 min-w-0 flex-1"
+              >
                 <button
                   type="button"
+                  aria-pressed={selectedCat === 'quick'}
                   onClick={() => setSelectedCat('quick')}
                   className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                     selectedCat === 'quick'
@@ -8444,6 +8453,7 @@ export default function PosPage() {
                 </button>
                 <button
                   type="button"
+                  aria-pressed={selectedCat === 'all'}
                   onClick={() => setSelectedCat('all')}
                   className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                     selectedCat === 'all'
@@ -8455,6 +8465,7 @@ export default function PosPage() {
                 </button>
                 <button
                   type="button"
+                  aria-pressed={selectedCat === 'pinned'}
                   onClick={() => setSelectedCat('pinned')}
                   className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                     selectedCat === 'pinned'
@@ -8467,6 +8478,7 @@ export default function PosPage() {
                 <span aria-hidden="true" className="h-4 w-px bg-slate-200 shrink-0" />
                 <button
                   type="button"
+                  aria-pressed={selectedCat === 'promo'}
                   onClick={() => setSelectedCat('promo')}
                   className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                     selectedCat === 'promo'
@@ -8478,6 +8490,7 @@ export default function PosPage() {
                 </button>
                 <button
                   type="button"
+                  aria-pressed={selectedCat === 'wholesale'}
                   onClick={() => setSelectedCat('wholesale')}
                   className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                     selectedCat === 'wholesale'
@@ -8491,6 +8504,7 @@ export default function PosPage() {
                   <button
                     key={cat.id}
                     type="button"
+                    aria-pressed={selectedCat === cat.id}
                     onClick={() => setSelectedCat(cat.id)}
                     className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                       selectedCat === cat.id
@@ -8772,6 +8786,13 @@ export default function PosPage() {
                   return (
                     <div
                       key={product.id}
+                      ref={
+                        isKeyboardHighlighted
+                          ? (el) => {
+                              el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                            }
+                          : undefined
+                      }
                       className={`cv-auto-card group relative flex flex-col justify-between bg-white border shadow-xs hover:border-emerald-400 hover:shadow-md transition-all text-left ${
                         isKeyboardHighlighted
                           ? 'ring-2 ring-emerald-500 border-emerald-500'
@@ -8795,8 +8816,8 @@ export default function PosPage() {
                         title={
                           isPinned ? 'เลิกปักหมุดสินค้าด่วน' : 'ปักหมุดสินค้าด่วน'
                         }
-                        className={`absolute z-10 min-h-9 min-w-9 flex items-center justify-center rounded-lg p-1.5 transition-colors ${
-                          isCompact ? 'top-1 right-1' : 'top-1.5 right-1.5'
+                        className={`absolute z-10 min-h-10 min-w-10 flex items-center justify-center rounded-lg p-2 transition-colors ${
+                          isCompact ? 'top-0.5 right-0.5' : 'top-1 right-1'
                         } ${
                           isPinned
                             ? 'text-amber-500 hover:bg-amber-100'
@@ -9276,59 +9297,6 @@ export default function PosPage() {
             </div>
           </form>
         )}
-      </Modal>
-
-      {/* Ad-hoc Item Modal */}
-      <Modal
-        open={adHocOpen}
-        onClose={() => setAdHocOpen(false)}
-        title="คิดราคาสินค้าด่วน"
-        maxWidthClass="max-w-sm"
-      >
-        <form onSubmit={handleConfirmAdHoc} className="space-y-4">
-          <div>
-            <label
-              htmlFor="adhoc-name-input"
-              className="block text-sm font-medium text-slate-700 mb-1"
-            >
-              ชื่อรายการ
-            </label>
-            <input
-              id="adhoc-name-input"
-              type="text"
-              required
-              value={adHocName}
-              onChange={(e) => setAdHocName(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="adhoc-price-input"
-              className="block text-sm font-medium text-slate-700 mb-1"
-            >
-              ราคา (บาท)
-            </label>
-            <input
-              id="adhoc-price-input"
-              type="number"
-              step="0.01"
-              min="0.01"
-              required
-              autoFocus
-              value={adHocPrice}
-              onChange={(e) => setAdHocPrice(e.target.value)}
-              placeholder="0"
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-xl font-bold tabular-nums focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white hover:bg-emerald-700"
-          >
-            เพิ่มลงตะกร้า
-          </button>
-        </form>
       </Modal>
 
       {/* Quick Calculator Modal */}
@@ -10048,9 +10016,10 @@ export default function PosPage() {
           </div>
 
           {/* Payment Method Tabs */}
-          <div className="grid grid-cols-3 gap-2">
+          <div role="group" aria-label="วิธีชำระเงิน" className="grid grid-cols-3 gap-2">
             <button
               type="button"
+              aria-pressed={paymentMethod === 'cash'}
               onClick={() => selectPaymentMethod('cash')}
               className={`relative flex flex-col items-center gap-1 rounded-xl border p-3 text-xs font-bold transition-colors ${
                 paymentMethod === 'cash'
@@ -10073,6 +10042,7 @@ export default function PosPage() {
             </button>
             <button
               type="button"
+              aria-pressed={paymentMethod === 'qr'}
               onClick={() => selectPaymentMethod('qr')}
               className={`relative flex flex-col items-center gap-1 rounded-xl border p-3 text-xs font-bold transition-colors ${
                 paymentMethod === 'qr'
@@ -10095,6 +10065,7 @@ export default function PosPage() {
             </button>
             <button
               type="button"
+              aria-pressed={paymentMethod === 'credit'}
               onClick={() => selectPaymentMethod('credit')}
               className={`relative flex flex-col items-center gap-1 rounded-xl border p-3 text-xs font-bold transition-colors ${
                 paymentMethod === 'credit'
@@ -10390,7 +10361,7 @@ export default function PosPage() {
                     ยังขาดอีก ฿{formatNumber(cashShortfall)}
                   </span>
                   <span className="text-xs font-medium text-amber-700 tabular-nums">
-                    รับแล้ว {formatBaht(cashReceivedNum)} / {formatBaht(finalTotal)}
+                    รับแล้ว {formatBaht(cashReceivedNum)} / {formatBaht(totalToCollectWithDebt)}
                   </span>
                 </div>
               ) : (
@@ -10777,7 +10748,10 @@ export default function PosPage() {
               )}
 
               {isOverCreditLimit && selectedCustomer && (
-                <div className="flex items-start gap-2.5 rounded-xl border border-rose-300 bg-rose-50 px-3.5 py-2.5 text-rose-800">
+                <div
+                  role="alert"
+                  className="flex items-start gap-2.5 rounded-xl border border-rose-300 bg-rose-50 px-3.5 py-2.5 text-rose-800"
+                >
                   <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
                   <div className="text-xs leading-relaxed">
                     <p className="font-bold text-rose-900">
@@ -11668,14 +11642,37 @@ export default function PosPage() {
                                   <span>รวมตะกร้าเข้าบิลพักนี้</span>
                                 </button>
                               )}
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteHeldBill(bill.id)}
-                                className="flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                                <span>ลบบิล</span>
-                              </button>
+                              {confirmDeleteHeldBillId === bill.id ? (
+                                <div className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-1.5 py-1">
+                                  <button
+                                    type="button"
+                                    autoFocus
+                                    onClick={() => {
+                                      setConfirmDeleteHeldBillId(null);
+                                      handleDeleteHeldBill(bill.id);
+                                    }}
+                                    className="rounded bg-rose-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-rose-700"
+                                  >
+                                    ยืนยันลบ
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmDeleteHeldBillId(null)}
+                                    className="rounded border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                                  >
+                                    ยกเลิก
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmDeleteHeldBillId(bill.id)}
+                                  className="flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <span>ลบบิล</span>
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -12828,9 +12825,9 @@ export default function PosPage() {
               key: 'F7',
               desc: 'เปิด / ปิดโหมดเพิ่มสินค้าเบ็ดเตล็ด / สินค้านอกรายการด่วน',
             },
-            { key: 'Ctrl+Enter', desc: 'จ่ายเงินสดพอดีทันที (เมื่อมีสินค้าในตะกร้า)' },
+            { key: 'Ctrl+Enter', desc: 'จ่ายเงินสดพอดีทันที (หน้าหลัก) / ยืนยันบิล (หน้าชำระเงิน) / เริ่มบิลถัดไป (หน้าใบเสร็จ)' },
             { key: 'F8 / F9 / F10', desc: 'เปิด/เลือก เงินสด / พร้อมเพย์ / เงินเชื่อ (ใช้ได้ทั้งหน้าหลักและหน้าชำระเงิน)' },
-            { key: 'Enter', desc: 'เพิ่มสินค้าทันที (เมื่ออยู่ในช่องค้นหา)' },
+            { key: '↑ / ↓ / Enter', desc: 'เลื่อนเลือกและเพิ่มสินค้าทันทีจากช่องค้นหา (กด Esc เพื่อล้าง)' },
           ].map((shortcut) => (
             <div
               key={shortcut.key}
@@ -12852,15 +12849,19 @@ export default function PosPage() {
       <Modal
         open={quickMiscOpen}
         onClose={() => setQuickMiscOpen(false)}
-        title="เพิ่มสินค้าเบ็ดเตล็ด / สินค้านอกรายการด่วน (F7)"
+        title="เพิ่มสินค้าเบ็ดเตล็ด / คิดราคาด่วน (F7)"
         maxWidthClass="max-w-md"
       >
         <form onSubmit={handleConfirmQuickMisc} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            <label
+              htmlFor="quick-misc-name-input"
+              className="block text-sm font-medium text-slate-700 mb-1.5"
+            >
               ชื่อรายการ
             </label>
             <input
+              id="quick-misc-name-input"
               type="text"
               required
               value={quickMiscName}
@@ -12875,6 +12876,7 @@ export default function PosPage() {
                   <button
                     key={presetName}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => setQuickMiscName(presetName)}
                     className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
                       isSelected
@@ -12925,6 +12927,7 @@ export default function PosPage() {
                             e.stopPropagation();
                             handleDeleteQuickMiscPreset(preset.name);
                           }}
+                          aria-label={`ลบปุ่มลัด ${preset.name}`}
                           title={`ลบปุ่มลัด "${preset.name}"`}
                           className={`pr-2 pl-1 py-1 text-xs font-bold ${
                             isActive
@@ -12943,10 +12946,14 @@ export default function PosPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            <label
+              htmlFor="quick-misc-price-input"
+              className="block text-sm font-medium text-slate-700 mb-1.5"
+            >
               ราคาต่อหน่วย (บาท)
             </label>
             <input
+              id="quick-misc-price-input"
               ref={quickMiscPriceInputRef}
               type="number"
               step="0.01"
@@ -12964,8 +12971,9 @@ export default function PosPage() {
                   <button
                     key={presetPrice}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => setQuickMiscPrice(String(presetPrice))}
-                    className={`rounded-lg border px-2.5 py-1 text-xs font-bold tabular-nums transition-colors ${
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-bold tabular-nums transition-colors ${
                       isSelected
                         ? 'border-teal-600 bg-teal-600 text-white'
                         : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-800'
@@ -12979,27 +12987,16 @@ export default function PosPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              ต้นทุนต่อหน่วย (บาท, ไม่บังคับ)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={quickMiscCost}
-              onChange={(e) => setQuickMiscCost(e.target.value)}
-              placeholder="0"
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-semibold tabular-nums focus:border-teal-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            <label
+              htmlFor="quick-misc-qty-input"
+              className="block text-sm font-medium text-slate-700 mb-1.5"
+            >
               จำนวนชิ้น
             </label>
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                aria-label="ลดจำนวนชิ้น"
                 onClick={() => {
                   const current = Math.floor(Number(quickMiscQty)) || 1;
                   setQuickMiscQty(String(Math.max(1, current - 1)));
@@ -13009,6 +13006,7 @@ export default function PosPage() {
                 <Minus className="h-4 w-4" />
               </button>
               <input
+                id="quick-misc-qty-input"
                 type="number"
                 step="1"
                 min="1"
@@ -13019,6 +13017,7 @@ export default function PosPage() {
               />
               <button
                 type="button"
+                aria-label="เพิ่มจำนวนชิ้น"
                 onClick={() => {
                   const current = Math.floor(Number(quickMiscQty)) || 0;
                   setQuickMiscQty(String(current + 1));
@@ -13029,6 +13028,35 @@ export default function PosPage() {
               </button>
             </div>
           </div>
+
+          {showQuickMiscCost || quickMiscCost !== '' ? (
+            <div>
+              <label
+                htmlFor="quick-misc-cost-input"
+                className="block text-sm font-medium text-slate-700 mb-1.5"
+              >
+                ต้นทุนต่อหน่วย (บาท, ไม่บังคับ)
+              </label>
+              <input
+                id="quick-misc-cost-input"
+                type="number"
+                step="0.01"
+                min="0"
+                value={quickMiscCost}
+                onChange={(e) => setQuickMiscCost(e.target.value)}
+                placeholder="0"
+                className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-semibold tabular-nums focus:border-teal-500 focus:outline-none"
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowQuickMiscCost(true)}
+              className="text-xs font-semibold text-teal-700 hover:text-teal-800 hover:underline"
+            >
+              + ระบุต้นทุนต่อหน่วย (ไม่บังคับ)
+            </button>
+          )}
 
           {Number(quickMiscPrice) > 0 && Math.floor(Number(quickMiscQty)) > 0 && (
             <div className="flex items-center justify-between rounded-xl border border-teal-200 bg-teal-50 px-3.5 py-2 text-sm font-bold text-teal-900">
@@ -14682,6 +14710,11 @@ export default function PosPage() {
           role="dialog"
           aria-modal="true"
           aria-label="หน้าจอขายถูกล็อกชั่วคราว"
+          onKeyDown={(e) => {
+            if (e.key === 'Tab') {
+              e.preventDefault();
+            }
+          }}
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900/95 backdrop-blur-md p-6 text-center text-white"
         >
           <div className="max-w-md w-full rounded-3xl border border-slate-700/80 bg-slate-800/90 p-8 shadow-2xl space-y-5">

@@ -124,6 +124,9 @@ label {
   button:active {
     transform: scale(0.98);
   }
+  kbd {
+    display: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
