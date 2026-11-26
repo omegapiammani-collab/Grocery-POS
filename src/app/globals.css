@@ -127,6 +127,9 @@ label {
   kbd {
     display: none !important;
   }
+  .touch-target {
+    min-height: 2.75rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

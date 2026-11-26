@@ -22,21 +22,30 @@ export function Modal({
 }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(false);
   const titleId = useId();
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (!dialog) return;
 
-    if (open && !dialog.open) {
-      if (document.activeElement instanceof HTMLElement) {
-        previousFocusRef.current = document.activeElement;
+    if (open) {
+      wasOpenRef.current = true;
+      if (dialog && !dialog.open) {
+        if (document.activeElement instanceof HTMLElement) {
+          previousFocusRef.current = document.activeElement;
+        }
+        dialog.showModal();
       }
-      dialog.showModal();
-    } else if (!open && dialog.open) {
-      dialog.close();
-      previousFocusRef.current?.focus();
+    } else if (wasOpenRef.current) {
+      wasOpenRef.current = false;
+      if (dialog?.open) {
+        dialog.close();
+      }
+      const target = previousFocusRef.current;
       previousFocusRef.current = null;
+      if (target?.isConnected) {
+        requestAnimationFrame(() => target.focus());
+      }
     }
   }, [open]);
 
@@ -46,10 +55,6 @@ export function Modal({
       dialog.returnValue = '';
     }
     onClose();
-    requestAnimationFrame(() => {
-      previousFocusRef.current?.focus();
-      previousFocusRef.current = null;
-    });
   };
 
   if (!open) return null;

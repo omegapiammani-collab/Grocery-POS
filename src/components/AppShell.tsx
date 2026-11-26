@@ -124,7 +124,7 @@ export function AppShell({
                 aria-current={active ? 'page' : undefined}
                 className={`flex items-center rounded-xl transition-colors ${
                   isRegisterFocus
-                    ? 'flex-col justify-center gap-0.5 px-1 py-2 text-[10px]'
+                    ? 'flex-col justify-center gap-0.5 px-1 py-2 text-[11px]'
                     : 'gap-3 px-3.5 py-3 text-sm'
                 } ${
                   active
@@ -149,7 +149,7 @@ export function AppShell({
             aria-label="ออกจากระบบ"
             className={`flex w-full items-center rounded-xl font-medium text-slate-600 hover:bg-rose-50 hover:text-rose-700 transition-colors ${
               isRegisterFocus
-                ? 'flex-col justify-center gap-0.5 px-1 py-2 text-[10px]'
+                ? 'flex-col justify-center gap-0.5 px-1 py-2 text-[11px]'
                 : 'gap-3 px-3.5 py-2.5 text-sm'
             }`}
           >
