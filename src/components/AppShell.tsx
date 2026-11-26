@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -21,16 +22,58 @@ const navItems = [
   { href: '/dashboard', label: 'สรุปยอด & ตั้งค่า', shortLabel: 'รายงาน', icon: BarChart3 },
 ];
 
+const STORE_NAME_CACHE_KEY = 'pos:last-store-name';
+const DEFAULT_STORE_NAME = 'ร้านขายของชำ POS';
+
+function StoreNameText({ name, className }: { name: string | null; className: string }) {
+  if (name) return <span className={className}>{name}</span>;
+  return (
+    <span
+      aria-hidden="true"
+      className="block h-4 w-28 max-w-full animate-pulse rounded bg-slate-200 motion-reduce:animate-none"
+    />
+  );
+}
+
 export function AppShell({
   children,
-  storeName = 'ร้านขายของชำ POS',
+  storeName,
 }: {
   children: React.ReactNode;
-  storeName?: string;
+  /** ส่ง null/undefined ระหว่างที่ settings ยังโหลดไม่เสร็จ เพื่อไม่ให้ชื่อ fallback แสดงแว็บแล้วเปลี่ยน */
+  storeName?: string | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const isRegisterFocus = pathname.startsWith('/pos');
+  const [cachedStoreName, setCachedStoreName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (storeName) {
+      try {
+        window.localStorage.setItem(STORE_NAME_CACHE_KEY, storeName);
+      } catch {
+        // ignore storage errors (private mode / quota)
+      }
+      return;
+    }
+    try {
+      const cached = window.localStorage.getItem(STORE_NAME_CACHE_KEY);
+      if (cached) setCachedStoreName(cached);
+    } catch {
+      // ignore storage errors
+    }
+  }, [storeName]);
+
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
+  useEffect(() => {
+    if (storeName) return;
+    const timer = window.setTimeout(() => setLoadTimedOut(true), 4000);
+    return () => window.clearTimeout(timer);
+  }, [storeName]);
+
+  const displayStoreName =
+    storeName || cachedStoreName || (loadTimedOut ? DEFAULT_STORE_NAME : null);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -53,14 +96,16 @@ export function AppShell({
           }`}
         >
           <div
-            title={storeName}
+            title={displayStoreName ?? undefined}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm"
           >
             <Store className="h-5 w-5" />
           </div>
           {!isRegisterFocus && (
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-slate-900">{storeName}</p>
+              <p className="truncate text-sm font-bold text-slate-900">
+                <StoreNameText name={displayStoreName} className="" />
+              </p>
               <p className="text-xs text-slate-500">ระบบขายหน้าร้าน</p>
             </div>
           )}
@@ -122,7 +167,7 @@ export function AppShell({
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
             <Store className="h-4 w-4" />
           </div>
-          <span className="truncate text-sm font-bold text-slate-900">{storeName}</span>
+          <StoreNameText name={displayStoreName} className="truncate text-sm font-bold text-slate-900" />
         </div>
         <button
           type="button"

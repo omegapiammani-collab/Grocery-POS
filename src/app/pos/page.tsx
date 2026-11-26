@@ -8099,7 +8099,7 @@ export default function PosPage() {
   return (
     <>
       <div className="print:hidden">
-        <AppShell storeName={settings?.store_name || 'ร้านขายของชำ POS'}>
+        <AppShell storeName={settings ? settings.store_name || 'ร้านขายของชำ POS' : null}>
       {toast && (
         <div
           role={toast.type === 'error' ? 'alert' : 'status'}
